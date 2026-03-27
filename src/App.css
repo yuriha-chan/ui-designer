@@ -36,6 +36,11 @@
   gap: 2rem;
   overflow: hidden;
 }
+.preview {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
 
 .component-tree {
   flex: 2;
@@ -165,7 +170,7 @@ input[type="text"]:focus {
   display: none;
 }
 
-.component-box:hover > .component-actions {
+.designer .component-box:hover > .component-actions {
   display: flex;
 }
 

@@ -210,10 +210,6 @@ function App() {
       console.log(
         `moveComponent: draggedId=${draggedId}, targetId=${targetId}`
       );
-      // コンポーネントを移動するロジック
-      console.log(
-        `findAndRemove: searching for id=${draggedId} in components length=${components.length}`
-      );
 
       const insertAt = (
         comps: UIComponent[],
@@ -692,13 +688,6 @@ function App() {
       <div className="preview-view">
         <div className="preview-header">
           <h2>{currentScreen?.name || "Preview"}</h2>
-          <button
-            className="preview-close-button"
-            onClick={() => setPreviewMode(false)}
-            title="Exit preview mode"
-          >
-            ×
-          </button>
         </div>
         <div className="preview-components">
           {currentComponents.map((comp) => renderPreviewComponent(comp))}
@@ -711,7 +700,8 @@ function App() {
     <DndProvider backend={HTML5Backend}>
       <DragManager>
         <div className="app">
-          <header className="header">
+          { previewMode ? (<button className="preview-close-button" onClick={() => setPreviewMode(false)} title="Exit preview mode"> × </button> ) :
+            (<header className="header">
             <div className="screen-name-editor">
               {isEditingScreenName ? (
                 <input
@@ -757,12 +747,9 @@ function App() {
                 accept=".json,application/json"
               />
             </div>
-          </header>
+          </header>)}
           <main className="main">
-            {previewMode ? (
-              <PreviewView />
-            ) : (
-              <div className="designer">
+              <div className={previewMode ? "preview" : "designer"}>
                 <div className="component-tree">
                   {sortComponentsBySExpression(getCurrentComponents()).map(
                     (comp) => (
@@ -784,6 +771,7 @@ function App() {
                     )
                   )}
                 </div>
+                { !previewMode && (
                 <div className="side-panel">
                   <div className="side-panel-content">
                     <div className="panel-switcher">
@@ -882,9 +870,8 @@ function App() {
                       </div>
                     )}
                   </div>
-                </div>
+                </div>)}
               </div>
-            )}
           </main>
           {contextMenu && contextMenu.type === "entity-path" && (
             <EntityPathMenu
