@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "./test-utils";
 import userEvent from "@testing-library/user-event";
 import { ComponentNode } from "../../ComponentNode";
+import { sortComponentsBySExpression } from "../../componentTree";
 import { simpleTree } from "../../../__fixtures__/componentTrees";
 import { allEntities } from "../../../__fixtures__/entities";
 
@@ -157,5 +158,51 @@ describe("ComponentNode", () => {
       x: expect.any(Number),
       y: expect.any(Number),
     });
+  });
+
+  it("renders children in sorted order", () => {
+    const { container } = render(<ComponentNode {...defaultProps} />);
+    const rootBox = container.querySelector(".component-box.depth-0");
+    expect(rootBox).not.toBeNull();
+
+    // Find children container
+    const childrenContainer = rootBox.querySelector(".children-container");
+    expect(childrenContainer).not.toBeNull();
+
+    // Get all child component boxes
+    const childBoxes = childrenContainer.querySelectorAll(".component-box");
+    expect(childBoxes.length).toBe(simpleTree[0].children.length);
+
+    // Get sorted children IDs
+    const sortedChildren = sortComponentsBySExpression(simpleTree[0].children);
+    const sortedIds = sortedChildren.map((child) => child.id);
+
+    // For each child box, we need to identify which component it represents
+    // We can match by entity and property labels
+    const childBoxArray = Array.from(childBoxes);
+    const renderedIds: string[] = [];
+
+    for (let i = 0; i < childBoxArray.length; i++) {
+      const box = childBoxArray[i];
+      const entityLabel = box.querySelector(".entity-label");
+      const propertyLabel = box.querySelector(".property-label");
+
+      // Find which component matches these labels
+      const matchingComponent = simpleTree[0].children.find((child) => {
+        const entityPath = child.entityPath || "";
+        const [entity, property] = entityPath.split(">");
+        return (
+          entityLabel?.textContent === entity.trim() &&
+          propertyLabel?.textContent === (property || "").trim()
+        );
+      });
+
+      if (matchingComponent) {
+        renderedIds.push(matchingComponent.id);
+      }
+    }
+
+    // Check that rendered IDs match sorted order
+    expect(renderedIds).toEqual(sortedIds);
   });
 });
