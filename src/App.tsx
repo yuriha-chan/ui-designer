@@ -16,6 +16,7 @@ import { UIComponent, Entity } from "./types";
 import { DragItem, ItemTypes, DropResult } from "./dnd";
 import { dragStore, useDragSelector } from "./dragStore";
 import { DragContext, DragManager } from "./DragManager";
+import { exportDesign, importDesign } from "./importExport";
 import {
   getColorForComponent,
   generateSExpression,
@@ -50,6 +51,7 @@ function App() {
   const [components, setComponents] =
     useState<UIComponent[]>(initialComponents);
   const [entities] = useState<Entity[]>(sampleEntities);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   type ContextMenuType = "entity-path" | "container-create";
   const [contextMenu, setContextMenu] = useState<{
     type: ContextMenuType;
@@ -236,6 +238,88 @@ function App() {
     [components]
   );
 
+  const handleExport = useCallback(() => {
+    const json = exportDesign(components, entities);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "design.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [components, entities]);
+
+  const handleImport = useCallback(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  }, []);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const result = event.target?.result;
+          if (typeof result !== "string") {
+            throw new Error("File content is not text");
+          }
+          const {
+            components: importedComponents,
+            entities: _importedEntities,
+          } = importDesign(result);
+          setComponents(importedComponents);
+          // Note: we don't update entities state because it's read-only from sampleEntities
+          // In a real app you might want to update entities as well
+        } catch (error) {
+          if (error instanceof Error) {
+            alert(error.message);
+          } else {
+            alert("Unknown error");
+          }
+        }
+      };
+      reader.readAsText(file);
+      // Reset file input to allow re-uploading the same file
+      e.target.value = "";
+    },
+    []
+  );
+
+  // Attach native change event listener to file input to ensure test events are captured
+  useEffect(() => {
+    const input = fileInputRef.current;
+    if (!input) return;
+    const handleNativeChange = (e: Event) => {
+      // Convert native event to React event-like object
+      const reactEvent = {
+        target: e.target,
+        currentTarget: e.currentTarget,
+        nativeEvent: e,
+        persist: () => {},
+        bubbles: e.bubbles,
+        cancelable: e.cancelable,
+        defaultPrevented: e.defaultPrevented,
+        eventPhase: e.eventPhase,
+        isTrusted: e.isTrusted,
+        preventDefault: () => e.preventDefault(),
+        stopPropagation: () => e.stopPropagation(),
+        timeStamp: e.timeStamp,
+        type: e.type,
+      } as React.ChangeEvent<HTMLInputElement>;
+      handleFileChange(reactEvent);
+    };
+    input.addEventListener("change", handleNativeChange);
+    return () => {
+      input.removeEventListener("change", handleNativeChange);
+    };
+  }, [handleFileChange]);
+
   // エンティティパス選択メニューコンポーネント
   const EntityPathMenu: React.FC<{
     entities: Entity[];
@@ -403,6 +487,20 @@ function App() {
               <div className="side-panel">
                 <div className="entities-panel">
                   <h4>Entities</h4>
+                  <div className="import-export-toolbar">
+                    <button className="export-button" onClick={handleExport}>
+                      Export Design
+                    </button>
+                    <button className="import-button" onClick={handleImport}>
+                      Import Design
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      style={{ display: "none" }}
+                      accept=".json,application/json"
+                    />
+                  </div>
                   <div className="entities-list">
                     {entities.map((entity) => (
                       <div key={entity.name} className="entity">

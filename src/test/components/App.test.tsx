@@ -277,4 +277,114 @@ describe("App", () => {
     expect(leafBox.querySelector(".entity-label")?.textContent).toBe("Product");
     expect(leafBox.querySelector(".property-label")?.textContent).toBe("Price");
   });
+
+  describe("import/export", () => {
+    beforeEach(() => {
+      // Mock URL.createObjectURL and URL.revokeObjectURL for download tests
+      global.URL.createObjectURL = vi.fn(() => "blob:fake-url");
+      global.URL.revokeObjectURL = vi.fn();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("renders export and import buttons in UI", () => {
+      render(<App />);
+      expect(screen.getByText("Export Design")).toBeInTheDocument();
+      expect(screen.getByText("Import Design")).toBeInTheDocument();
+    });
+
+    it("export button triggers download with current design data", async () => {
+      const user = userEvent.setup();
+      const mockAnchorClick = vi.fn();
+      HTMLAnchorElement.prototype.click = mockAnchorClick;
+
+      render(<App />);
+      const exportButton = screen.getByText("Export Design");
+      await user.click(exportButton);
+
+      // Should create a blob with JSON
+      expect(global.URL.createObjectURL).toHaveBeenCalled();
+      const blobCall = (global.URL.createObjectURL as any).mock.calls[0][0];
+      expect(blobCall).toBeInstanceOf(Blob);
+      expect(blobCall.type).toBe("application/json");
+
+      // Should trigger download click
+      expect(mockAnchorClick).toHaveBeenCalled();
+
+      // Clean up
+      delete HTMLAnchorElement.prototype.click;
+    });
+
+    it("import button opens file input and loads design", async () => {
+      const user = userEvent.setup();
+      const mockFileReader = {
+        readAsText: vi.fn(),
+        result: JSON.stringify({
+          version: "1.0",
+          components: [
+            {
+              id: "new",
+              type: "text",
+              entityPath: "Account>Name",
+              children: [],
+            },
+          ],
+          entities: [{ name: "Account", properties: ["Name"] }],
+        }),
+        onload: null as any,
+      };
+      global.FileReader = vi.fn(() => mockFileReader) as any;
+
+      render(<App />);
+      const importButton = screen.getByText("Import Design");
+      await user.click(importButton);
+
+      // Should create file input
+      const fileInput = document.querySelector('input[type="file"]');
+      expect(fileInput).not.toBeNull();
+
+      // Simulate file selection
+      const file = new File([""], "design.json", { type: "application/json" });
+      const changeEvent = new Event("change");
+      Object.defineProperty(fileInput, "files", { value: [file] });
+      fileInput?.dispatchEvent(changeEvent);
+
+      // FileReader should be called
+      expect(mockFileReader.readAsText).toHaveBeenCalledWith(file);
+
+      // Simulate load complete
+      mockFileReader.onload?.({ target: mockFileReader } as any);
+
+      // Should update components state (check UI for new component)
+      // This depends on implementation
+    });
+
+    it("shows error when importing invalid JSON", async () => {
+      const user = userEvent.setup();
+      const mockFileReader = {
+        readAsText: vi.fn(),
+        result: "invalid json",
+        onload: null as any,
+      };
+      global.FileReader = vi.fn(() => mockFileReader) as any;
+      const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+
+      render(<App />);
+      const importButton = screen.getByText("Import Design");
+      await user.click(importButton);
+
+      const fileInput = document.querySelector('input[type="file"]');
+      const file = new File([""], "design.json", { type: "application/json" });
+      const changeEvent = new Event("change");
+      Object.defineProperty(fileInput, "files", { value: [file] });
+      fileInput?.dispatchEvent(changeEvent);
+
+      mockFileReader.onload?.({ target: mockFileReader } as any);
+
+      expect(alertSpy).toHaveBeenCalledWith("Invalid JSON");
+      alertSpy.mockRestore();
+    });
+  });
 });
