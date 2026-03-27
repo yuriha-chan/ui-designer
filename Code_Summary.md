@@ -72,9 +72,11 @@
 12. **src/dnd.ts** - Drag-and-drop type definitions and constants
 13. **src/dragStore.ts** - Simple state management for drag operations using useSyncExternalStore
 14. **src/DragManager.tsx** - Drag context provider with throttled updates
-15. **src/test/unit/componentTree.test.ts** - Unit tests for core algorithms
-16. ****fixtures**/** - Test data for components and entities
-17. ****mocks**/** - Mock implementations for testing (react-dnd, uuid, usehooks)
+15. **src/storage.ts** - localStorage auto-save/load utilities with validation
+16. **src/test/unit/componentTree.test.ts** - Unit tests for core algorithms
+17. **src/test/unit/storage.test.ts** - Unit tests for storage utilities
+18. \***\*fixtures**/\*\* - Test data for components and entities
+19. \***\*mocks**/\*\* - Mock implementations for testing (react-dnd, uuid, usehooks, storage)
 
 ## Characteristics Report
 
@@ -296,7 +298,7 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 
 - **No React error boundaries** implemented
 - **Limited error recovery** in drag operations
-- **No persistence or undo/redo** for component tree changes
+- **Persistence**: Designs auto-saved to localStorage on change (debounced 1s) with auto-recovery on load
 
 ### Development Workflow Notes
 
@@ -319,8 +321,8 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 1. **Drag state persistence**: `dragStore` maintains state outside React tree
 2. **Throttle timing**: 200ms throttle on drag target updates may affect UX
 3. **No undo/redo**: Component tree modifications are not reversible
-4. **No persistence**: Designs not saved between sessions
-5. **Mock dependencies**: Tests rely on mocked versions of react-dnd, uuid, usehooks
+4. **Auto-save**: Designs saved to localStorage with "autosave" key, debounced 1 second
+5. **Mock dependencies**: Tests rely on mocked versions of react-dnd, uuid, usehooks, storage
 6. **Deterministic testing**: UUID mocking required for deterministic test results
 
 ### Future Development Path (from README)
