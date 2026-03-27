@@ -19,9 +19,11 @@ describe("ComponentNode", () => {
     onRemove: vi.fn(),
     onEntityPathChange: vi.fn(),
     onTargetScreenChange: vi.fn(),
+    onButtonClick: vi.fn(),
     onMoveComponent: vi.fn(),
     isDescendant: vi.fn().mockReturnValue(false),
     setContextMenu: vi.fn(),
+    previewMode: false,
   };
 
   it("renders container component", () => {

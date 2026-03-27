@@ -20,6 +20,7 @@ const ComponentNode: React.FC<{
   onRemove: (id: string) => void;
   onEntityPathChange: (id: string, entityPath: string) => void;
   onTargetScreenChange: (id: string, targetScreen: string) => void;
+  onButtonClick?: (id: string) => void;
   onMoveComponent: (draggedId: string, targetId: string) => void;
   isDescendant: (parentId: string, childId: string) => boolean;
   setContextMenu: (
@@ -30,6 +31,7 @@ const ComponentNode: React.FC<{
       y: number;
     } | null
   ) => void;
+  previewMode?: boolean;
 }> = React.memo(
   ({
     component,
@@ -41,9 +43,11 @@ const ComponentNode: React.FC<{
     onRemove,
     onEntityPathChange,
     onTargetScreenChange,
+    onButtonClick,
     onMoveComponent,
     isDescendant,
     setContextMenu,
+    previewMode = false,
   }) => {
     const color = getColorForComponent(component.type, depth);
     const { entity, property } = parseEntityPath(component.entityPath);
@@ -61,8 +65,10 @@ const ComponentNode: React.FC<{
     }, [component.id, component.type, parentId]);
 
     const { setRawDropTargetId } = useContext(DragContext)!;
+    const isContainer = component.type === "container";
 
-    const [{ isDragging }, drag] = useDrag(
+    // Drag and drop hooks - always called but conditionally enabled
+    const [{ isDragging: dragging }, drag] = useDrag(
       () => ({
         type: ItemTypes.COMPONENT,
         item: () => {
@@ -75,12 +81,9 @@ const ComponentNode: React.FC<{
             parentId: parentId,
           } as DragItem;
         },
-        collect: (monitor) => {
-          const dragging = monitor.isDragging();
-          return {
-            isDragging: dragging,
-          };
-        },
+        collect: (monitor) => ({
+          isDragging: monitor.isDragging(),
+        }),
         end: (item, monitor) => {
           const dropResult = monitor.getDropResult<DropResult>();
           console.log(
@@ -101,24 +104,19 @@ const ComponentNode: React.FC<{
           }
           setRawDropTargetId(null);
         },
+        canDrag: !previewMode,
       }),
-      [component.id, component.type, parentId, onMoveComponent]
+      [component.id, component.type, parentId, onMoveComponent, previewMode]
     );
+    const isDragging = dragging;
+    const dragRef = drag;
 
-    const isOver = useDragSelector(
-      (state) => state.currentDropTargetId === component.id
-    );
-
-    // ドロップ可能にする
-    const isContainer = component.type === "container";
-    console.log(
-      `ComponentNode ${component.id}: useDrop hook called, isContainer=${isContainer}, parentId=${parentId || "none"}`
-    );
-    const [{ canDrop }, drop] = useDrop(() => {
+    const [{ canDrop: canDropValue }, drop] = useDrop(() => {
       const isContainer = component.type === "container";
       return {
         accept: ItemTypes.COMPONENT,
         canDrop: (item) => {
+          if (previewMode) return false;
           // Prevent dragging a container into its own descendant
           if (
             item.component.type === "container" &&
@@ -155,6 +153,7 @@ const ComponentNode: React.FC<{
         },
 
         hover: (_item, monitor) => {
+          if (previewMode) return;
           if (monitor.isOver({ shallow: true })) {
             let targetId = component.id;
             // For non-containers, route hover to parent
@@ -168,6 +167,7 @@ const ComponentNode: React.FC<{
           }
         },
         drop: (item: DragItem) => {
+          if (previewMode) return undefined;
           console.log(
             `ComponentNode ${component.id}: drop called for item ${item.component.id}`
           );
@@ -176,25 +176,29 @@ const ComponentNode: React.FC<{
             targetId: dragStore.getState().currentDropTargetId,
           } as DropResult;
         },
-        collect: (monitor: DropTargetMonitor<DragItem, DropResult>) => {
-          const canDropValue = monitor.canDrop();
-          return {
-            canDrop: canDropValue,
-          };
-        },
+        collect: (monitor: DropTargetMonitor<DragItem, DropResult>) => ({
+          canDrop: monitor.canDrop(),
+        }),
       };
-    }, [component.id, component.type, parentId, isDescendant]);
+    }, [component.id, component.type, parentId, isDescendant, previewMode]);
+    const canDrop = canDropValue;
+    const dropRef = drop;
 
-    // dragとdropを同じ要素に適用（dropはコンテナのみ）
+    // Combined ref for drag and drop
     const dragDropRef = useCallback(
       (el: HTMLDivElement | null) => {
         console.log(
           `ComponentNode ${component.id}: dragDropRef called with el=${el ? "HTMLDivElement" : "null"}`
         );
-        drag(el);
-        drop(el);
+        dragRef(el);
+        dropRef(el);
       },
-      [drag, drop, component.id]
+      [dragRef, dropRef, component.id]
+    );
+
+
+    const isOver = useDragSelector(
+      (state) => state.currentDropTargetId === component.id
     );
 
     const handleCopy = () => {
@@ -203,6 +207,12 @@ const ComponentNode: React.FC<{
       } else {
         // Root components cannot be copied (no parent)
         throw new Error("Cannot copy root component");
+      }
+    };
+
+    const handleButtonClick = () => {
+      if (previewMode && component.type === "button" && onButtonClick) {
+        onButtonClick(component.id);
       }
     };
 
@@ -219,15 +229,18 @@ const ComponentNode: React.FC<{
       });
     };
 
-    // TODO
-    const cursorClass = "cursor-default";
+    const cursorClass =
+      previewMode && component.type === "button"
+        ? "cursor-pointer"
+        : "cursor-default";
 
     return (
       <div className="component-node">
         <div
           ref={dragDropRef}
           className={`component-box ${cursorClass} depth-${depth} component-${component.type}`}
-          onContextMenu={handleContextMenu}
+          onContextMenu={previewMode ? undefined : handleContextMenu}
+          onClick={handleButtonClick}
           style={{
             backgroundColor: color,
             opacity: isDragging ? 0.5 : 1,
@@ -241,7 +254,7 @@ const ComponentNode: React.FC<{
                 {property && <div className="property-label">{property}</div>}
               </div>
             )}
-            {component.type === "button" && (
+            {!previewMode && component.type === "button" && (
               <div className="target-screen-selector">
                 <select
                   value={component.targetScreen || ""}
@@ -263,11 +276,14 @@ const ComponentNode: React.FC<{
                 </select>
               </div>
             )}
+            {previewMode && component.type === "button" && targetScreenName && (
+              <div className="target-screen-display">→ {targetScreenName}</div>
+            )}
           </div>
           {component.type === "container" && isOver && canDrop && (
             <div className="insertion-preview" />
           )}
-          {parentId && (
+          {!previewMode && parentId && (
             <div className="component-actions">
               <button onClick={handleCopy} title="Copy">
                 ⎘
@@ -291,9 +307,11 @@ const ComponentNode: React.FC<{
                   onRemove={onRemove}
                   onEntityPathChange={onEntityPathChange}
                   onTargetScreenChange={onTargetScreenChange}
+                  onButtonClick={onButtonClick}
                   onMoveComponent={onMoveComponent}
                   isDescendant={isDescendant}
                   setContextMenu={setContextMenu}
+                  previewMode={previewMode}
                 />
               ))}
             </div>

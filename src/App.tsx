@@ -379,6 +379,17 @@ function App() {
     [updateCurrentScreenComponents]
   );
 
+  const handleButtonClick = useCallback(
+    (id: string) => {
+      const currentComponents = getCurrentComponents();
+      const component = findComponent(currentComponents, id);
+      if (component && component.type === "button" && component.targetScreen) {
+        setCurrentScreenId(component.targetScreen);
+      }
+    },
+    [getCurrentComponents]
+  );
+
   const handleExport = useCallback(() => {
     let json: string;
     if (exportMode === "screen") {
@@ -700,78 +711,92 @@ function App() {
     <DndProvider backend={HTML5Backend}>
       <DragManager>
         <div className="app">
-          { previewMode ? (<button className="preview-close-button" onClick={() => setPreviewMode(false)} title="Exit preview mode"> × </button> ) :
-            (<header className="header">
-            <div className="screen-name-editor">
-              {isEditingScreenName ? (
+          {previewMode ? (
+            <button
+              className="preview-close-button"
+              onClick={() => setPreviewMode(false)}
+              title="Exit preview mode"
+            >
+              {" "}
+              ×{" "}
+            </button>
+          ) : (
+            <header className="header">
+              <div className="screen-name-editor">
+                {isEditingScreenName ? (
+                  <input
+                    type="text"
+                    value={editingScreenName}
+                    onChange={(e) => setEditingScreenName(e.target.value)}
+                    onBlur={handleScreenNameBlur}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleScreenNameBlur()
+                    }
+                    autoFocus
+                  />
+                ) : (
+                  <h1 onClick={() => startEditingScreenName()}>
+                    {getCurrentScreen()?.name || "Untitled"}
+                  </h1>
+                )}
+              </div>
+              <div className="menu-bar">
+                <button
+                  className="preview-button"
+                  onClick={() => setPreviewMode(!previewMode)}
+                >
+                  {previewMode ? "Exit Preview" : "Preview"}
+                </button>
+                <select
+                  value={exportMode}
+                  onChange={(e) =>
+                    setExportMode(e.target.value as "screen" | "storyboard")
+                  }
+                >
+                  <option value="screen">Current Screen</option>
+                  <option value="storyboard">Storyboard</option>
+                </select>
+                <button className="export-button" onClick={handleExport}>
+                  Export
+                </button>
+                <button className="import-button" onClick={handleImport}>
+                  Import
+                </button>
                 <input
-                  type="text"
-                  value={editingScreenName}
-                  onChange={(e) => setEditingScreenName(e.target.value)}
-                  onBlur={handleScreenNameBlur}
-                  onKeyDown={(e) => e.key === "Enter" && handleScreenNameBlur()}
-                  autoFocus
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  accept=".json,application/json"
                 />
-              ) : (
-                <h1 onClick={() => startEditingScreenName()}>
-                  {getCurrentScreen()?.name || "Untitled"}
-                </h1>
-              )}
-            </div>
-            <div className="menu-bar">
-              <button
-                className="preview-button"
-                onClick={() => setPreviewMode(!previewMode)}
-              >
-                {previewMode ? "Exit Preview" : "Preview"}
-              </button>
-              <select
-                value={exportMode}
-                onChange={(e) =>
-                  setExportMode(e.target.value as "screen" | "storyboard")
-                }
-              >
-                <option value="screen">Current Screen</option>
-                <option value="storyboard">Storyboard</option>
-              </select>
-              <button className="export-button" onClick={handleExport}>
-                Export
-              </button>
-              <button className="import-button" onClick={handleImport}>
-                Import
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                accept=".json,application/json"
-              />
-            </div>
-          </header>)}
+              </div>
+            </header>
+          )}
           <main className="main">
-              <div className={previewMode ? "preview" : "designer"}>
-                <div className="component-tree">
-                  {sortComponentsBySExpression(getCurrentComponents()).map(
-                    (comp) => (
-                      <ComponentNode
-                        key={comp.id}
-                        component={comp}
-                        depth={0}
-                        parentId={undefined}
-                        entities={entities}
-                        screens={screens}
-                        onCopy={copyComponent}
-                        onRemove={removeComponent}
-                        onEntityPathChange={updateEntityPath}
-                        onTargetScreenChange={updateTargetScreen}
-                        onMoveComponent={moveComponent}
-                        isDescendant={isDescendant}
-                        setContextMenu={setContextMenu}
-                      />
-                    )
-                  )}
-                </div>
-                { !previewMode && (
+            <div className={previewMode ? "preview" : "designer"}>
+              <div className="component-tree">
+                {sortComponentsBySExpression(getCurrentComponents()).map(
+                  (comp) => (
+                    <ComponentNode
+                      key={comp.id}
+                      component={comp}
+                      depth={0}
+                      parentId={undefined}
+                      entities={entities}
+                      screens={screens}
+                      onCopy={copyComponent}
+                      onRemove={removeComponent}
+                      onEntityPathChange={updateEntityPath}
+                      onTargetScreenChange={updateTargetScreen}
+                      onButtonClick={handleButtonClick}
+                      onMoveComponent={moveComponent}
+                      isDescendant={isDescendant}
+                      setContextMenu={setContextMenu}
+                      previewMode={previewMode}
+                    />
+                  )
+                )}
+              </div>
+              {!previewMode && (
                 <div className="side-panel">
                   <div className="side-panel-content">
                     <div className="panel-switcher">
@@ -870,8 +895,9 @@ function App() {
                       </div>
                     )}
                   </div>
-                </div>)}
-              </div>
+                </div>
+              )}
+            </div>
           </main>
           {contextMenu && contextMenu.type === "entity-path" && (
             <EntityPathMenu
