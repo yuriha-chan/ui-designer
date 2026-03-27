@@ -1,27 +1,12 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useReducer,
-  useContext,
-  createContext,
-  useMemo,
-  useRef,
-} from "react";
-import { DndProvider, useDrag, useDrop, DropTargetMonitor } from "react-dnd";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { v4 as uuidv4 } from "uuid";
-import { useThrottle } from "@uidotdev/usehooks";
 import { UIComponent, Entity } from "./types";
-import { DragItem, ItemTypes, DropResult } from "./dnd";
-import { dragStore, useDragSelector } from "./dragStore";
-import { DragContext, DragManager } from "./DragManager";
+import { DragManager } from "./DragManager";
 import { exportDesign, importDesign } from "./importExport";
 import {
-  getColorForComponent,
-  generateSExpression,
   sortComponentsBySExpression,
-  parseEntityPath,
   isDescendant as isDescendantPure,
   findAndRemove,
   findComponent,

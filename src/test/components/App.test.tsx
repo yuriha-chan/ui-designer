@@ -1,9 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, within } from "./test-utils";
 import userEvent from "@testing-library/user-event";
 import App from "../../App";
-import { simpleTree } from "../../../__fixtures__/componentTrees";
-import { allEntities } from "../../../__fixtures__/entities";
 
 // Mock console.log to keep test output clean
 vi.spyOn(console, "log").mockImplementation(() => {});
@@ -281,8 +279,8 @@ describe("App", () => {
   describe("import/export", () => {
     beforeEach(() => {
       // Mock URL.createObjectURL and URL.revokeObjectURL for download tests
-      global.URL.createObjectURL = vi.fn(() => "blob:fake-url");
-      global.URL.revokeObjectURL = vi.fn();
+      globalThis.URL.createObjectURL = vi.fn(() => "blob:fake-url");
+      globalThis.URL.revokeObjectURL = vi.fn();
     });
 
     afterEach(() => {
@@ -305,8 +303,8 @@ describe("App", () => {
       await user.click(exportButton);
 
       // Should create a blob with JSON
-      expect(global.URL.createObjectURL).toHaveBeenCalled();
-      const blobCall = (global.URL.createObjectURL as any).mock.calls[0][0];
+      expect(globalThis.URL.createObjectURL).toHaveBeenCalled();
+      const blobCall = (globalThis.URL.createObjectURL as any).mock.calls[0][0];
       expect(blobCall).toBeInstanceOf(Blob);
       expect(blobCall.type).toBe("application/json");
 
@@ -314,7 +312,7 @@ describe("App", () => {
       expect(mockAnchorClick).toHaveBeenCalled();
 
       // Clean up
-      delete HTMLAnchorElement.prototype.click;
+      delete (HTMLAnchorElement.prototype as any).click;
     });
 
     it("import button opens file input and loads design", async () => {
@@ -335,7 +333,7 @@ describe("App", () => {
         }),
         onload: null as any,
       };
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+      globalThis.FileReader = vi.fn(() => mockFileReader) as any;
 
       render(<App />);
       const importButton = screen.getByText("Import Design");
@@ -368,7 +366,7 @@ describe("App", () => {
         result: "invalid json",
         onload: null as any,
       };
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+      globalThis.FileReader = vi.fn(() => mockFileReader) as any;
       const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
       render(<App />);

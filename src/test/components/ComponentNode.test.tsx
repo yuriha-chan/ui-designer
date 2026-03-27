@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "./test-utils";
+import { render, screen } from "./test-utils";
 import userEvent from "@testing-library/user-event";
 import { ComponentNode } from "../../ComponentNode";
 import { sortComponentsBySExpression } from "../../componentTree";
@@ -27,9 +27,9 @@ describe("ComponentNode", () => {
     const rootBox = container.querySelector(".component-box.depth-0");
     expect(rootBox).not.toBeNull();
     // Container should not have entity-path-display direct child
-    const allEntityDisplays = rootBox.querySelectorAll(".entity-path-display");
+    const allEntityDisplays = rootBox!.querySelectorAll(".entity-path-display");
     const directEntityDisplays = Array.from(allEntityDisplays).filter(
-      (el) => el.parentElement?.parentElement === rootBox
+      (el) => el.parentElement?.parentElement === rootBox!
     );
     expect(directEntityDisplays.length).toBe(0);
   });
@@ -69,9 +69,9 @@ describe("ComponentNode", () => {
     const rootBox = container.querySelector(".component-box.depth-0");
     expect(rootBox).not.toBeNull();
     // Root component should not have .component-actions direct child
-    const allActions = rootBox.querySelectorAll(".component-actions");
+    const allActions = rootBox!.querySelectorAll(".component-actions");
     const directActions = Array.from(allActions).filter(
-      (el) => el.parentElement === rootBox
+      (el) => el.parentElement === rootBox!
     );
     expect(directActions.length).toBe(0);
   });
@@ -166,11 +166,11 @@ describe("ComponentNode", () => {
     expect(rootBox).not.toBeNull();
 
     // Find children container
-    const childrenContainer = rootBox.querySelector(".children-container");
+    const childrenContainer = rootBox!.querySelector(".children-container");
     expect(childrenContainer).not.toBeNull();
 
     // Get all child component boxes
-    const childBoxes = childrenContainer.querySelectorAll(".component-box");
+    const childBoxes = childrenContainer!.querySelectorAll(".component-box");
     expect(childBoxes.length).toBe(simpleTree[0].children.length);
 
     // Get sorted children IDs

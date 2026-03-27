@@ -1,27 +1,13 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useReducer,
-  useContext,
-  createContext,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useCallback, useEffect, useContext } from "react";
 import { useDrag, useDrop, DropTargetMonitor } from "react-dnd";
 import { UIComponent, Entity } from "./types";
 import { DragItem, ItemTypes, DropResult } from "./dnd";
 import { dragStore, useDragSelector } from "./dragStore";
-import { DragContext, DragManager } from "./DragManager";
+import { DragContext } from "./DragManager";
 import {
   getColorForComponent,
-  generateSExpression,
   sortComponentsBySExpression,
   parseEntityPath,
-  isDescendant as isDescendantPure,
-  findAndRemove,
-  findComponent,
-  deepCopy,
 } from "./componentTree";
 
 const ComponentNode: React.FC<{
@@ -209,7 +195,7 @@ const ComponentNode: React.FC<{
         onCopy(component.id, parentId);
       } else {
         // Root components cannot be copied (no parent)
-        throw ValueError("Cannot copy root component");
+        throw new Error("Cannot copy root component");
       }
     };
 
@@ -286,7 +272,10 @@ const ComponentNode: React.FC<{
     );
   },
   (prev, next) =>
-    prev === next || Object.keys(prev).every((k) => prev[k] === next[k])
+    prev === next ||
+    Object.keys(prev).every(
+      (k) => prev[k as keyof typeof prev] === next[k as keyof typeof prev]
+    )
 );
 
 export { ComponentNode };

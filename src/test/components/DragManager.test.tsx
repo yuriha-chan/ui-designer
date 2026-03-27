@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "./test-utils";
-import React, { useContext } from "react";
+import { useContext } from "react";
 
 // Create hoisted mock functions
 const mockUseThrottle = vi.hoisted(() => vi.fn());
