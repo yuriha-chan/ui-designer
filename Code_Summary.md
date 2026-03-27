@@ -5,6 +5,8 @@
 ### Directory Structure Overview
 ```
 /app/ui-designer/
+├── .claude/
+│   └── settings.json         # Claude Code automation hooks
 ├── src/
 │   ├── types.ts              # TypeScript type definitions
 │   ├── App.tsx               # Main application component (681 lines)
@@ -14,11 +16,18 @@
 │   ├── DragManager.tsx       # Drag manager component with context
 │   ├── dnd.ts                # Drag-and-drop type definitions
 │   ├── dragStore.ts          # Drag state management store
-│   └── (no other source files)
-├── package.json              # npm package configuration
+│   └── test/
+│       └── setup.ts          # Vitest testing setup
+├── .gitignore                # Git ignore patterns
+├── .prettierrc               # Prettier formatting configuration
+├── CLAUDE.md                 # Claude Code project guidelines
+├── Code_Summary.md           # This codebase summary
+├── package.json              # pnpm package configuration
+├── pnpm-lock.yaml            # pnpm lock file
 ├── tsconfig.json             # TypeScript configuration
 ├── tsconfig.node.json        # Node-specific TypeScript config
 ├── vite.config.ts            # Vite build configuration
+├── vitest.config.ts          # Vitest test configuration
 ├── index.html                # HTML entry point
 └── README.md                 # Project documentation
 ```
@@ -26,11 +35,15 @@
 ### Key Files
 1. **package.json** - Project dependencies and scripts
 2. **README.md** - Comprehensive project documentation explaining philosophy and implementation
-3. **src/types.ts** - Core type definitions (Entity, UIComponent, TopologicalClass, DesignMetrics)
-4. **src/App.tsx** - Main application component with UI logic and drag-and-drop handlers
-5. **src/dnd.ts** - Drag-and-drop type definitions and constants
-6. **src/dragStore.ts** - Simple state management for drag operations
-7. **src/DragManager.tsx** - Drag context provider with throttling
+3. **CLAUDE.md** - Claude Code project guidelines and automation rules
+4. **.claude/settings.json** - Format-on-edit hook for automatic Prettier formatting
+5. **vitest.config.ts** - Vitest test configuration
+6. **.prettierrc** - Prettier formatting configuration (2-space indent)
+7. **src/types.ts** - Core type definitions (Entity, UIComponent, TopologicalClass, DesignMetrics)
+8. **src/App.tsx** - Main application component with UI logic and drag-and-drop handlers
+9. **src/dnd.ts** - Drag-and-drop type definitions and constants
+10. **src/dragStore.ts** - Simple state management for drag operations
+11. **src/DragManager.tsx** - Drag context provider with throttling
 
 ## Characteristics Report
 
@@ -41,7 +54,7 @@
 - **CSS**: Plain CSS with dark theme design
 
 ### Package Manager & Dependencies
-- **Package Manager**: npm (project uses `type: "module"`)
+- **Package Manager**: pnpm (project uses `type: "module"`)
 - **Key Dependencies**:
   - React 18.2.0, React DOM 18.2.0
   - react-dnd 16.0.1 (drag-and-drop library)
@@ -51,6 +64,8 @@
   - TypeScript 5.0.2 with strict linting rules
   - ESLint 8.45.0 with React plugins
   - Vite plugins for React
+  - Prettier 3.8.1 for code formatting
+  - Vitest 4.1.2 with React Testing Library for testing
 
 ### Project Structure
 - **Type**: Single-page application (SPA)
@@ -59,34 +74,32 @@
 - **No routing or multiple pages**
 
 ### Build System & Workflows
-- **Development**: `npm run dev` (Vite dev server)
-- **Build**: `npm run build` (TypeScript compilation + Vite build)
-- **Linting**: `npm run lint` (ESLint with TypeScript and React rules)
-- **Preview**: `npm run preview` (Vite preview server)
+- **Development**: `pnpm run dev` (Vite dev server)
+- **Build**: `pnpm run build` (TypeScript compilation + Vite build)
+- **Linting**: `pnpm run lint` (ESLint with TypeScript and React rules)
+- **Testing**: `pnpm run test` (Vitest test runner)
+- **Preview**: `pnpm run preview` (Vite preview server)
 
 ### Code Style & Configuration
 - **TypeScript**: Strict mode with `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`
 - **ESLint**: Configured for TypeScript and React (hooks, refresh)
-- **No Prettier or other formatter configuration found**
-- **No .editorconfig or .prettierrc files**
-- **No .gitignore file** (likely using global gitignore)
+- **Prettier**: Configured with 2-space indentation (`.prettierrc`)
+- **Format-on-edit hook**: Automatic formatting via `.claude/settings.json`
+- **Git ignore**: `.gitignore` with standard patterns
 
 ### Git & Version Control
 - **VCS**: Git
-- **Branch**: main (single commit: "initial commit")
+- **Branch**: main (2 commits: "initial commit", "Add CLAUDE.md and development automation")
 - **No multiple worktrees** (`git worktree list` shows only main)
 - **Clean working tree** (no uncommitted changes)
 
 ### Development Environment
 - **No .env or environment configuration files**
-- **No test configuration or test files**
+- **Testing**: Vitest configured with React Testing Library (`vitest.config.ts`, `src/test/setup.ts`)
 - **No CI/CD configuration files**
 
 ### Missing Configurations
-- No .gitignore file
-- No ESLint configuration file (likely using default/package.json config)
-- No formatter configuration (Prettier, etc.)
-- No test setup
+- ESLint uses default configuration (package.json scripts)
 - No environment variable configuration
 
 ## Semantics Report
@@ -180,9 +193,9 @@ Splits "Entity>Property" strings into entity and property components for display
 - `DragItem.type` is string rather than union type
 - Some type assertions (`!` operator) in main.tsx
 
-#### 4. No Formatter Configuration
-- Code style relies on developer discipline
-- Potential inconsistency in formatting across team
+#### 4. Formatter Configuration Added
+- Prettier configured with 2-space indentation
+- Format-on-edit hook ensures consistent formatting automatically
 
 #### 5. Japanese Comments
 - Some comments in Japanese (e.g., "コンポーネントタイプと深さに基づく色を生成")
@@ -191,9 +204,10 @@ Splits "Entity>Property" strings into entity and property components for display
 ### Development Workflow Notes
 
 #### Build & Test Commands
-- Standard Vite/React commands: `dev`, `build`, `preview`
+- Standard Vite/React commands: `pnpm run dev`, `pnpm run build`, `pnpm run preview`
 - ESLint configured but no auto-fix script
-- No test commands
+- Test commands: `pnpm run test` (Vitest), `pnpm run test:ui` (Vitest UI)
+- Format-on-edit hook automatically runs Prettier after each file edit
 
 #### Non-Standard Requirements
 - No environment variables required
@@ -215,4 +229,4 @@ Splits "Entity>Property" strings into entity and property components for display
 - Demo mode for testing
 
 ## Summary
-The Topological UI Designer is a specialized educational tool built with modern React/TypeScript. It enforces a constrained design environment to teach UI architecture fundamentals through topological relationships rather than visual styling. The codebase is relatively small (11 files, ~1,200 lines) with a focused architecture centered around hierarchical component trees, deterministic sorting via S-expressions, and a custom drag-and-drop system for manipulating UI structure.
+The Topological UI Designer is a specialized educational tool built with modern React/TypeScript. It enforces a constrained design environment to teach UI architecture fundamentals through topological relationships rather than visual styling. The codebase is relatively small (19 files, ~1,200 lines plus configuration) with a focused architecture centered around hierarchical component trees, deterministic sorting via S-expressions, and a custom drag-and-drop system for manipulating UI structure. The project now includes automated formatting (Prettier), testing (Vitest), and Claude Code automation hooks.
