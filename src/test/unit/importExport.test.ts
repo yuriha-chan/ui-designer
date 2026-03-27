@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { UIComponent, Entity } from "../../types";
+import { UIComponent, Entity, Screen } from "../../types";
 import {
   exportDesign,
+  exportStoryboard,
   importDesign,
   validateDesignData,
 } from "../../importExport";
@@ -68,8 +69,11 @@ describe("importDesign", () => {
     const json = exportDesign(components, entities);
 
     const result = importDesign(json);
-    expect(result.components).toEqual(components);
-    expect(result.entities).toEqual(entities);
+    expect(result.version).toBe("1.0");
+    if (result.version === "1.0") {
+      expect(result.components).toEqual(components);
+      expect(result.entities).toEqual(entities);
+    }
   });
 
   it("throws error on invalid JSON", () => {
@@ -133,6 +137,25 @@ describe("validateDesignData", () => {
     };
     expect(validateDesignData(data)).toBe(false);
   });
+
+  it("returns true for valid storyboard data", () => {
+    const screens: Screen[] = [
+      { id: "1", name: "Screen 1", components: simpleTree },
+      { id: "2", name: "Screen 2", components: mediumTree },
+    ];
+    const entities = allEntities;
+    const data = { screens, entities, version: "2.0" };
+    expect(validateDesignData(data)).toBe(true);
+  });
+
+  it("returns false for invalid screen structure", () => {
+    const data = {
+      screens: [{ id: "1", name: "Screen 1" }], // missing components
+      entities: [],
+      version: "2.0",
+    };
+    expect(validateDesignData(data)).toBe(false);
+  });
 });
 
 describe("round-trip", () => {
@@ -155,8 +178,46 @@ describe("round-trip", () => {
       const json = exportDesign(components, entities);
       const result = importDesign(json);
 
-      expect(result.components).toEqual(components);
-      expect(result.entities).toEqual(entities);
+      expect(result.version).toBe("1.0");
+      if (result.version === "1.0") {
+        expect(result.components).toEqual(components);
+        expect(result.entities).toEqual(entities);
+      }
     });
+  });
+});
+
+describe("exportStoryboard", () => {
+  it("exports screens with entities", () => {
+    const screens: Screen[] = [
+      { id: "1", name: "Screen 1", components: simpleTree },
+      { id: "2", name: "Screen 2", components: mediumTree },
+    ];
+    const entities = allEntities;
+    const json = exportStoryboard(screens, entities);
+
+    expect(() => JSON.parse(json)).not.toThrow();
+    const parsed = JSON.parse(json);
+    expect(parsed.version).toBe("2.0");
+    expect(parsed.screens).toEqual(screens);
+    expect(parsed.entities).toEqual(entities);
+  });
+});
+
+describe("importDesign storyboard", () => {
+  it("imports previously exported storyboard", () => {
+    const screens: Screen[] = [
+      { id: "1", name: "Screen 1", components: simpleTree },
+      { id: "2", name: "Screen 2", components: mediumTree },
+    ];
+    const entities = allEntities;
+    const json = exportStoryboard(screens, entities);
+
+    const result = importDesign(json);
+    expect(result.version).toBe("2.0");
+    if (result.version === "2.0") {
+      expect(result.screens).toEqual(screens);
+      expect(result.entities).toEqual(entities);
+    }
   });
 });

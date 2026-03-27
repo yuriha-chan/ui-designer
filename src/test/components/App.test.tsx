@@ -289,8 +289,8 @@ describe("App", () => {
 
     it("renders export and import buttons in UI", () => {
       render(<App />);
-      expect(screen.getByText("Export Design")).toBeInTheDocument();
-      expect(screen.getByText("Import Design")).toBeInTheDocument();
+      expect(screen.getByText("Export")).toBeInTheDocument();
+      expect(screen.getByText("Import")).toBeInTheDocument();
     });
 
     it("export button triggers download with current design data", async () => {
@@ -299,7 +299,7 @@ describe("App", () => {
       HTMLAnchorElement.prototype.click = mockAnchorClick;
 
       render(<App />);
-      const exportButton = screen.getByText("Export Design");
+      const exportButton = screen.getByText("Export");
       await user.click(exportButton);
 
       // Should create a blob with JSON
@@ -336,7 +336,7 @@ describe("App", () => {
       globalThis.FileReader = vi.fn(() => mockFileReader) as any;
 
       render(<App />);
-      const importButton = screen.getByText("Import Design");
+      const importButton = screen.getByText("Import");
       await user.click(importButton);
 
       // Should create file input
@@ -370,7 +370,7 @@ describe("App", () => {
       const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
       render(<App />);
-      const importButton = screen.getByText("Import Design");
+      const importButton = screen.getByText("Import");
       await user.click(importButton);
 
       const fileInput = document.querySelector('input[type="file"]');

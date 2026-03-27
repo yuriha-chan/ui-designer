@@ -14,9 +14,11 @@ describe("ComponentNode", () => {
     component: simpleTree[0], // root container
     depth: 0,
     entities: allEntities,
+    screens: [] as any[], // mock screens array
     onCopy: vi.fn(),
     onRemove: vi.fn(),
     onEntityPathChange: vi.fn(),
+    onTargetScreenChange: vi.fn(),
     onMoveComponent: vi.fn(),
     isDescendant: vi.fn().mockReturnValue(false),
     setContextMenu: vi.fn(),

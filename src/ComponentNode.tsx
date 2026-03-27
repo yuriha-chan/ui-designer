@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useContext } from "react";
 import { useDrag, useDrop, DropTargetMonitor } from "react-dnd";
-import { UIComponent, Entity } from "./types";
+import { UIComponent, Entity, Screen } from "./types";
 import { DragItem, ItemTypes, DropResult } from "./dnd";
 import { dragStore, useDragSelector } from "./dragStore";
 import { DragContext } from "./DragManager";
@@ -15,9 +15,11 @@ const ComponentNode: React.FC<{
   depth: number;
   parentId?: string;
   entities: Entity[];
+  screens: Screen[];
   onCopy: (sourceId: string, parentId: string) => void;
   onRemove: (id: string) => void;
   onEntityPathChange: (id: string, entityPath: string) => void;
+  onTargetScreenChange: (id: string, targetScreen: string) => void;
   onMoveComponent: (draggedId: string, targetId: string) => void;
   isDescendant: (parentId: string, childId: string) => boolean;
   setContextMenu: (
@@ -34,15 +36,20 @@ const ComponentNode: React.FC<{
     depth,
     parentId,
     entities,
+    screens,
     onCopy,
     onRemove,
     onEntityPathChange,
+    onTargetScreenChange,
     onMoveComponent,
     isDescendant,
     setContextMenu,
   }) => {
     const color = getColorForComponent(component.type, depth);
     const { entity, property } = parseEntityPath(component.entityPath);
+    const targetScreenName = component.targetScreen
+      ? screens.find((s) => s.id === component.targetScreen)?.name
+      : null;
 
     useEffect(() => {
       console.log(
@@ -234,6 +241,28 @@ const ComponentNode: React.FC<{
                 {property && <div className="property-label">{property}</div>}
               </div>
             )}
+            {component.type === "button" && (
+              <div className="target-screen-selector">
+                <select
+                  value={component.targetScreen || ""}
+                  onChange={(e) =>
+                    onTargetScreenChange(component.id, e.target.value)
+                  }
+                  title={
+                    targetScreenName
+                      ? `Target: ${targetScreenName}`
+                      : "Select target screen"
+                  }
+                >
+                  <option value="">Select target screen</option>
+                  {screens.map((screen) => (
+                    <option key={screen.id} value={screen.id}>
+                      {screen.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           {component.type === "container" && isOver && canDrop && (
             <div className="insertion-preview" />
@@ -257,9 +286,11 @@ const ComponentNode: React.FC<{
                   depth={depth + 1}
                   parentId={component.id}
                   entities={entities}
+                  screens={screens}
                   onCopy={onCopy}
                   onRemove={onRemove}
                   onEntityPathChange={onEntityPathChange}
+                  onTargetScreenChange={onTargetScreenChange}
                   onMoveComponent={onMoveComponent}
                   isDescendant={isDescendant}
                   setContextMenu={setContextMenu}
