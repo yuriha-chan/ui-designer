@@ -3,6 +3,12 @@ import { render, screen, within } from "./test-utils";
 import userEvent from "@testing-library/user-event";
 import App from "../../App";
 
+// Mock storage module
+vi.mock("../../storage", () => ({
+  saveToStorage: vi.fn(),
+  loadFromStorage: vi.fn(() => null),
+}));
+
 // Mock console.log to keep test output clean
 vi.spyOn(console, "log").mockImplementation(() => {});
 

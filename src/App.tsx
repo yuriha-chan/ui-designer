@@ -2,9 +2,11 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { v4 as uuidv4 } from "uuid";
+import { useDebounce } from "@uidotdev/usehooks";
 import { UIComponent, Entity, Screen } from "./types";
 import { DragManager } from "./DragManager";
 import { exportDesign, exportStoryboard, importDesign } from "./importExport";
+import { saveToStorage, loadFromStorage } from "./storage";
 import {
   ChakraProvider,
   defaultSystem,
@@ -188,10 +190,24 @@ function App() {
     setEditingScreenName("");
   }, [editingScreenName, currentScreenId, renameScreen]);
 
+  // Auto-recovery: Load from localStorage on mount
   useEffect(() => {
-    console.log("App mounted");
-    return () => console.log("App unmounted");
+    const saved = loadFromStorage();
+    if (saved) {
+      setScreens(saved.screens);
+      setEntities(saved.entities);
+      setCurrentScreenId(saved.currentScreenId);
+    }
   }, []);
+
+  // Auto-save: Save to localStorage on change (debounced 1 second)
+  const debouncedSave = useDebounce(
+    { screens, entities, currentScreenId },
+    1000
+  );
+  useEffect(() => {
+    saveToStorage(debouncedSave);
+  }, [debouncedSave]);
 
   // メニュー外クリックやエスケープキーでメニューを閉じる
   useEffect(() => {
