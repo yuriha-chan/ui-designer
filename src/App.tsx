@@ -6,6 +6,21 @@ import { UIComponent, Entity, Screen } from "./types";
 import { DragManager } from "./DragManager";
 import { exportDesign, exportStoryboard, importDesign } from "./importExport";
 import {
+  ChakraProvider,
+  defaultSystem,
+  Button,
+  NativeSelect,
+  Input,
+  Box,
+  Heading,
+  VStack,
+  HStack,
+  Accordion,
+  Text,
+  Flex,
+  CloseButton,
+} from "@chakra-ui/react";
+import {
   sortComponentsBySExpression,
   isDescendant as isDescendantPure,
   findAndRemove,
@@ -500,56 +515,92 @@ function App() {
     x: number;
     y: number;
   }> = ({ entities, onSelect, onClose, x, y }) => {
-    const [expandedEntity, setExpandedEntity] = useState<string | null>(null);
+    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+    const handleValueChange = (details: { value: string[] }) => {
+      const value = details.value;
+      if (value.length === 0) {
+        setExpandedIndex(null);
+      } else {
+        const firstValue = value[0];
+        // If it's a number string, parse it
+        const num = parseInt(firstValue, 10);
+        if (!isNaN(num)) {
+          setExpandedIndex(num);
+        }
+      }
+    };
 
     return (
-      <div
+      <Box
         className="context-menu entity-path-menu"
-        style={{ left: x, top: y }}
+        position="fixed"
+        left={x}
+        top={y}
+        zIndex={1000}
       >
-        <div className="menu-header">
-          <h5>Select Entity Path</h5>
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
-        </div>
-        <div className="accordion">
-          <div className="accordion-item" onClick={() => onSelect("")}>
-            <div className="accordion-title">...</div>
-            <div className="accordion-content">Clear entity path</div>
-          </div>
-          {entities.map((entity) => (
-            <div key={entity.name} className="accordion-item">
-              <div
-                className="accordion-title"
-                onClick={() =>
-                  setExpandedEntity(
-                    expandedEntity === entity.name ? null : entity.name
-                  )
-                }
-              >
-                {entity.name}
-                <span className="accordion-icon">
-                  {expandedEntity === entity.name ? "−" : "+"}
-                </span>
-              </div>
-              {expandedEntity === entity.name && (
-                <div className="accordion-content">
+        <Flex
+          className="menu-header"
+          justify="space-between"
+          align="center"
+          p={4}
+        >
+          <Text fontSize="lg" fontWeight="bold">
+            Select Entity Path
+          </Text>
+          <CloseButton onClick={onClose} />
+        </Flex>
+        <Accordion.Root
+          collapsible
+          value={expandedIndex !== null ? [expandedIndex.toString()] : []}
+          onValueChange={handleValueChange}
+          className="accordion"
+        >
+          <Accordion.Item value="clear" className="accordion-item">
+            <Accordion.ItemTrigger
+              className="accordion-title"
+              onClick={() => onSelect("")}
+            >
+              <Box flex="1" textAlign="left">
+                ...
+              </Box>
+            </Accordion.ItemTrigger>
+            <Accordion.ItemContent className="accordion-content" p={4}>
+              <Accordion.ItemBody>Clear entity path</Accordion.ItemBody>
+            </Accordion.ItemContent>
+          </Accordion.Item>
+          {entities.map((entity, index) => (
+            <Accordion.Item
+              key={entity.name}
+              value={index.toString()}
+              className="accordion-item"
+            >
+              <Accordion.ItemTrigger className="accordion-title">
+                <Box flex="1" textAlign="left">
+                  {entity.name}
+                </Box>
+                <Accordion.ItemIndicator />
+              </Accordion.ItemTrigger>
+              <Accordion.ItemContent className="accordion-content" p={4}>
+                <Accordion.ItemBody>
                   {entity.properties.map((property) => (
-                    <div
+                    <Box
                       key={property}
                       className="property-option"
                       onClick={() => onSelect(`${entity.name}>${property}`)}
+                      p={2}
+                      cursor="pointer"
+                      _hover={{ bg: "gray.100" }}
                     >
                       {property}
-                    </div>
+                    </Box>
                   ))}
-                </div>
-              )}
-            </div>
+                </Accordion.ItemBody>
+              </Accordion.ItemContent>
+            </Accordion.Item>
           ))}
-        </div>
-      </div>
+        </Accordion.Root>
+      </Box>
     );
   };
 
@@ -563,47 +614,97 @@ function App() {
     y: number;
   }> = ({ onSelect, onClose, x, y }) => {
     return (
-      <div
+      <Box
         className="context-menu container-context-menu"
-        style={{ left: x, top: y }}
+        position="fixed"
+        left={x}
+        top={y}
+        zIndex={1000}
       >
-        <div className="menu-header">
-          <h5>Add Component</h5>
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
-        </div>
-        <div className="menu-options">
-          <div className="menu-option" onClick={() => onSelect("container")}>
-            <div className="option-icon">□</div>
-            <div className="option-label">Container</div>
-          </div>
-          <div className="menu-option" onClick={() => onSelect("text")}>
-            <div className="option-icon" style={{ color: "#3b82f6" }}>
+        <Flex
+          className="menu-header"
+          justify="space-between"
+          align="center"
+          p={4}
+        >
+          <Text fontSize="lg" fontWeight="bold">
+            Add Component
+          </Text>
+          <CloseButton onClick={onClose} />
+        </Flex>
+        <VStack className="menu-options" gap={2} p={4}>
+          <Flex
+            className="menu-option"
+            onClick={() => onSelect("container")}
+            align="center"
+            gap={3}
+            p={3}
+            cursor="pointer"
+            _hover={{ bg: "gray.100" }}
+          >
+            <Box className="option-icon" fontSize="xl">
+              □
+            </Box>
+            <Box className="option-label">Container</Box>
+          </Flex>
+          <Flex
+            className="menu-option"
+            onClick={() => onSelect("text")}
+            align="center"
+            gap={3}
+            p={3}
+            cursor="pointer"
+            _hover={{ bg: "gray.100" }}
+          >
+            <Box className="option-icon" fontSize="xl" color="blue.500">
               T
-            </div>
-            <div className="option-label">Text</div>
-          </div>
-          <div className="menu-option" onClick={() => onSelect("number")}>
-            <div className="option-icon" style={{ color: "#10b981" }}>
+            </Box>
+            <Box className="option-label">Text</Box>
+          </Flex>
+          <Flex
+            className="menu-option"
+            onClick={() => onSelect("number")}
+            align="center"
+            gap={3}
+            p={3}
+            cursor="pointer"
+            _hover={{ bg: "gray.100" }}
+          >
+            <Box className="option-icon" fontSize="xl" color="green.500">
               #
-            </div>
-            <div className="option-label">Number</div>
-          </div>
-          <div className="menu-option" onClick={() => onSelect("button")}>
-            <div className="option-icon" style={{ color: "#ef4444" }}>
+            </Box>
+            <Box className="option-label">Number</Box>
+          </Flex>
+          <Flex
+            className="menu-option"
+            onClick={() => onSelect("button")}
+            align="center"
+            gap={3}
+            p={3}
+            cursor="pointer"
+            _hover={{ bg: "gray.100" }}
+          >
+            <Box className="option-icon" fontSize="xl" color="red.500">
               B
-            </div>
-            <div className="option-label">Button</div>
-          </div>
-          <div className="menu-option" onClick={() => onSelect("input")}>
-            <div className="option-icon" style={{ color: "#8b5cf6" }}>
+            </Box>
+            <Box className="option-label">Button</Box>
+          </Flex>
+          <Flex
+            className="menu-option"
+            onClick={() => onSelect("input")}
+            align="center"
+            gap={3}
+            p={3}
+            cursor="pointer"
+            _hover={{ bg: "gray.100" }}
+          >
+            <Box className="option-icon" fontSize="xl" color="purple.500">
               I
-            </div>
-            <div className="option-label">Input</div>
-          </div>
-        </div>
-      </div>
+            </Box>
+            <Box className="option-label">Input</Box>
+          </Flex>
+        </VStack>
+      </Box>
     );
   };
 
@@ -642,283 +743,298 @@ function App() {
   };
 
   // プレビューモード表示コンポーネント
-  const PreviewView: React.FC = () => {
-    const currentComponents = getCurrentComponents();
-    const currentScreen = getCurrentScreen();
-
-    const handleButtonClick = (component: UIComponent) => {
-      if (component.type === "button" && component.targetScreen) {
-        setCurrentScreenId(component.targetScreen);
-      }
-    };
-
-    const renderPreviewComponent = (
-      comp: UIComponent,
-      depth: number = 0
-    ): JSX.Element => {
-      const color =
-        comp.type === "container"
-          ? "#2a2a2a"
-          : comp.type === "text"
-            ? "#3b82f6"
-            : comp.type === "number"
-              ? "#10b981"
-              : comp.type === "button"
-                ? "#ef4444"
-                : "#8b5cf6";
-
-      return (
-        <div
-          key={comp.id}
-          className={`preview-component ${comp.type}`}
-          style={{
-            marginLeft: depth * 20,
-            padding: "8px",
-            border: `1px solid ${color}`,
-            borderRadius: "4px",
-            backgroundColor: "#2a2a2a",
-            cursor: comp.type === "button" ? "pointer" : "default",
-          }}
-          onClick={() => comp.type === "button" && handleButtonClick(comp)}
-        >
-          <div className="preview-component-label">
-            {comp.type}: {comp.entityPath || comp.targetScreen || ""}
-          </div>
-          {comp.type === "container" && comp.children.length > 0 && (
-            <div className="preview-children">
-              {comp.children.map((child) =>
-                renderPreviewComponent(child, depth + 1)
-              )}
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    return (
-      <div className="preview-view">
-        <div className="preview-header">
-          <h2>{currentScreen?.name || "Preview"}</h2>
-        </div>
-        <div className="preview-components">
-          {currentComponents.map((comp) => renderPreviewComponent(comp))}
-        </div>
-      </div>
-    );
-  };
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <DragManager>
-        <div className="app">
-          {previewMode ? (
-            <button
-              className="preview-close-button"
-              onClick={() => setPreviewMode(false)}
-              title="Exit preview mode"
-            >
-              {" "}
-              ×{" "}
-            </button>
-          ) : (
-            <header className="header">
-              <div className="screen-name-editor">
-                {isEditingScreenName ? (
-                  <input
-                    type="text"
-                    value={editingScreenName}
-                    onChange={(e) => setEditingScreenName(e.target.value)}
-                    onBlur={handleScreenNameBlur}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && handleScreenNameBlur()
-                    }
-                    autoFocus
-                  />
-                ) : (
-                  <h1 onClick={() => startEditingScreenName()}>
-                    {getCurrentScreen()?.name || "Untitled"}
-                  </h1>
-                )}
-              </div>
-              <div className="menu-bar">
-                <button
-                  className="preview-button"
-                  onClick={() => setPreviewMode(!previewMode)}
-                >
-                  {previewMode ? "Exit Preview" : "Preview"}
-                </button>
-                <select
-                  value={exportMode}
-                  onChange={(e) =>
-                    setExportMode(e.target.value as "screen" | "storyboard")
-                  }
-                >
-                  <option value="screen">Current Screen</option>
-                  <option value="storyboard">Storyboard</option>
-                </select>
-                <button className="export-button" onClick={handleExport}>
-                  Export
-                </button>
-                <button className="import-button" onClick={handleImport}>
-                  Import
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  style={{ display: "none" }}
-                  accept=".json,application/json"
-                />
-              </div>
-            </header>
-          )}
-          <main className="main">
-            <div className={previewMode ? "preview" : "designer"}>
-              <div className="component-tree">
-                {sortComponentsBySExpression(getCurrentComponents()).map(
-                  (comp) => (
-                    <ComponentNode
-                      key={comp.id}
-                      component={comp}
-                      depth={0}
-                      parentId={undefined}
-                      entities={entities}
-                      screens={screens}
-                      onCopy={copyComponent}
-                      onRemove={removeComponent}
-                      onEntityPathChange={updateEntityPath}
-                      onTargetScreenChange={updateTargetScreen}
-                      onButtonClick={handleButtonClick}
-                      onMoveComponent={moveComponent}
-                      isDescendant={isDescendant}
-                      setContextMenu={setContextMenu}
-                      previewMode={previewMode}
+    <ChakraProvider value={defaultSystem}>
+      <DndProvider backend={HTML5Backend}>
+        <DragManager>
+          <Box className="app">
+            {previewMode ? (
+              <Button
+                onClick={() => setPreviewMode(false)}
+                title="Exit preview mode"
+                variant="ghost"
+                colorScheme="gray"
+                size="sm"
+              >
+                ×
+              </Button>
+            ) : (
+              <Box as="header" className="header">
+                <Box className="screen-name-editor">
+                  {isEditingScreenName ? (
+                    <Input
+                      type="text"
+                      value={editingScreenName}
+                      onChange={(e) => setEditingScreenName(e.target.value)}
+                      onBlur={handleScreenNameBlur}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleScreenNameBlur()
+                      }
+                      autoFocus
+                      variant="outline"
+                      size="sm"
                     />
-                  )
-                )}
-              </div>
-              {!previewMode && (
-                <div className="side-panel">
-                  <div className="side-panel-content">
-                    <div className="panel-switcher">
-                      <button
-                        className={panelType === "entities" ? "active" : ""}
-                        onClick={() => setPanelType("entities")}
-                      >
-                        Entities
-                      </button>
-                      <button
-                        className={panelType === "screens" ? "active" : ""}
-                        onClick={() => setPanelType("screens")}
-                      >
-                        Screens
-                      </button>
-                    </div>
-                    {panelType === "entities" ? (
-                      <div className="entities-panel">
-                        <div className="entities-list">
-                          {entities.map((entity) => (
-                            <div key={entity.name} className="entity">
-                              <div className="entity-name">{entity.name}</div>
-                              <div className="entity-properties">
-                                {entity.properties.map((prop) => (
-                                  <div key={prop} className="entity-property">
-                                    {entity.name} &gt; {prop}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="screens-panel">
-                        <div className="add-screen-form">
-                          <input
-                            type="text"
-                            placeholder="New screen name"
-                            onKeyDown={(e) => {
-                              if (
-                                e.key === "Enter" &&
-                                e.currentTarget.value.trim()
-                              ) {
-                                addScreen(e.currentTarget.value.trim());
-                                e.currentTarget.value = "";
-                              }
-                            }}
-                          />
-                          <button
-                            onClick={() => {
-                              const input = document.querySelector(
-                                ".add-screen-form input"
-                              ) as HTMLInputElement;
-                              if (input && input.value.trim()) {
-                                addScreen(input.value.trim());
-                                input.value = "";
-                              }
-                            }}
+                  ) : (
+                    <Heading
+                      as="h1"
+                      size="lg"
+                      onClick={() => startEditingScreenName()}
+                      cursor="pointer"
+                    >
+                      {getCurrentScreen()?.name || "Untitled"}
+                    </Heading>
+                  )}
+                </Box>
+                <HStack className="menu-bar" gap={2}>
+                  <Button
+                    onClick={() => setPreviewMode(!previewMode)}
+                    colorScheme="blue"
+                    size="sm"
+                  >
+                    {previewMode ? "Exit Preview" : "Preview"}
+                  </Button>
+                  <NativeSelect.Root size="sm" width="auto">
+                    <NativeSelect.Field
+                      value={exportMode}
+                      onChange={(e) =>
+                        setExportMode(e.target.value as "screen" | "storyboard")
+                      }
+                    >
+                      <option value="screen">Current Screen</option>
+                      <option value="storyboard">Storyboard</option>
+                    </NativeSelect.Field>
+                    <NativeSelect.Indicator />
+                  </NativeSelect.Root>
+                  <Button onClick={handleExport} colorScheme="green" size="sm">
+                    Export
+                  </Button>
+                  <Button onClick={handleImport} colorScheme="purple" size="sm">
+                    Import
+                  </Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    accept=".json,application/json"
+                  />
+                </HStack>
+              </Box>
+            )}
+            <Box as="main" className="main">
+              <Box className={previewMode ? "preview" : "designer"}>
+                <Box className="component-tree">
+                  {sortComponentsBySExpression(getCurrentComponents()).map(
+                    (comp) => (
+                      <ComponentNode
+                        key={comp.id}
+                        component={comp}
+                        depth={0}
+                        parentId={undefined}
+                        entities={entities}
+                        screens={screens}
+                        onCopy={copyComponent}
+                        onRemove={removeComponent}
+                        onEntityPathChange={updateEntityPath}
+                        onTargetScreenChange={updateTargetScreen}
+                        onButtonClick={handleButtonClick}
+                        onMoveComponent={moveComponent}
+                        isDescendant={isDescendant}
+                        setContextMenu={setContextMenu}
+                        previewMode={previewMode}
+                      />
+                    )
+                  )}
+                </Box>
+                {!previewMode && (
+                  <Box className="side-panel">
+                    <Box className="side-panel-content">
+                      <HStack className="panel-switcher" gap={2}>
+                        <Button
+                          colorScheme={
+                            panelType === "entities" ? "blue" : "gray"
+                          }
+                          onClick={() => setPanelType("entities")}
+                          size="sm"
+                        >
+                          Entities
+                        </Button>
+                        <Button
+                          colorScheme={
+                            panelType === "screens" ? "blue" : "gray"
+                          }
+                          onClick={() => setPanelType("screens")}
+                          size="sm"
+                        >
+                          Screens
+                        </Button>
+                      </HStack>
+                      {panelType === "entities" ? (
+                        <Box className="entities-panel">
+                          <VStack
+                            className="entities-list"
+                            gap={2}
+                            align="stretch"
                           >
-                            Add
-                          </button>
-                        </div>
-                        <div className="screens-list">
-                          {screens.map((screen) => (
-                            <div
-                              key={screen.id}
-                              className={`screen-item ${screen.id === currentScreenId ? "active" : ""}`}
+                            {entities.map((entity) => (
+                              <Box
+                                key={entity.name}
+                                className="entity"
+                                borderWidth="1px"
+                                borderRadius="md"
+                                p={2}
+                              >
+                                <Box
+                                  className="entity-name"
+                                  fontWeight="bold"
+                                  mb={1}
+                                >
+                                  {entity.name}
+                                </Box>
+                                <VStack
+                                  className="entity-properties"
+                                  gap={1}
+                                  align="stretch"
+                                >
+                                  {entity.properties.map((prop) => (
+                                    <Box
+                                      key={prop}
+                                      className="entity-property"
+                                      fontSize="sm"
+                                    >
+                                      {entity.name} &gt; {prop}
+                                    </Box>
+                                  ))}
+                                </VStack>
+                              </Box>
+                            ))}
+                          </VStack>
+                        </Box>
+                      ) : (
+                        <Box className="screens-panel">
+                          <HStack className="add-screen-form" gap={2} mb={4}>
+                            <Input
+                              type="text"
+                              placeholder="New screen name"
+                              onKeyDown={(e) => {
+                                if (
+                                  e.key === "Enter" &&
+                                  e.currentTarget.value.trim()
+                                ) {
+                                  addScreen(e.currentTarget.value.trim());
+                                  e.currentTarget.value = "";
+                                }
+                              }}
+                              size="sm"
+                            />
+                            <Button
+                              onClick={() => {
+                                const input = document.querySelector(
+                                  ".add-screen-form input"
+                                ) as HTMLInputElement;
+                                if (input && input.value.trim()) {
+                                  addScreen(input.value.trim());
+                                  input.value = "";
+                                }
+                              }}
+                              size="sm"
+                              colorScheme="blue"
                             >
-                              <div
-                                className="screen-name"
+                              Add
+                            </Button>
+                          </HStack>
+                          <VStack
+                            className="screens-list"
+                            gap={2}
+                            align="stretch"
+                          >
+                            {screens.map((screen) => (
+                              <Box
+                                key={screen.id}
+                                className={`screen-item ${screen.id === currentScreenId ? "active" : ""}`}
+                                borderWidth="1px"
+                                borderRadius="md"
+                                p={2}
+                                bg={
+                                  screen.id === currentScreenId
+                                    ? "blue.50"
+                                    : "transparent"
+                                }
+                                borderColor={
+                                  screen.id === currentScreenId
+                                    ? "blue.200"
+                                    : "gray.200"
+                                }
+                                cursor="pointer"
                                 onClick={() => setCurrentScreenId(screen.id)}
                               >
-                                {screen.name}
-                              </div>
-                              <div className="screen-actions">
-                                <button
-                                  className="copy-btn"
-                                  onClick={() => copyScreen(screen.id)}
-                                  title="Copy screen"
-                                >
-                                  📋
-                                </button>
-                                <button
-                                  className="delete-btn"
-                                  onClick={() => deleteScreen(screen.id)}
-                                  title="Delete screen"
-                                  disabled={screens.length <= 1}
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </main>
-          {contextMenu && contextMenu.type === "entity-path" && (
-            <EntityPathMenu
-              entities={entities}
-              onSelect={handleEntityPathSelect}
-              onClose={() => setContextMenu(null)}
-              x={contextMenu.x}
-              y={contextMenu.y}
-            />
-          )}
-          {contextMenu && contextMenu.type === "container-create" && (
-            <ContainerContextMenu
-              onSelect={handleComponentCreate}
-              onClose={() => setContextMenu(null)}
-              x={contextMenu.x}
-              y={contextMenu.y}
-            />
-          )}
-        </div>
-      </DragManager>
-    </DndProvider>
+                                <HStack justify="space-between">
+                                  <Box
+                                    className="screen-name"
+                                    fontWeight="medium"
+                                  >
+                                    {screen.name}
+                                  </Box>
+                                  <HStack className="screen-actions" gap={1}>
+                                    <Button
+                                      className="copy-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyScreen(screen.id);
+                                      }}
+                                      title="Copy screen"
+                                      size="xs"
+                                      variant="ghost"
+                                    >
+                                      📋
+                                    </Button>
+                                    <Button
+                                      className="delete-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteScreen(screen.id);
+                                      }}
+                                      title="Delete screen"
+                                      disabled={screens.length <= 1}
+                                      size="xs"
+                                      variant="ghost"
+                                      colorScheme="red"
+                                    >
+                                      🗑️
+                                    </Button>
+                                  </HStack>
+                                </HStack>
+                              </Box>
+                            ))}
+                          </VStack>
+                        </Box>
+                      )}
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+            {contextMenu && contextMenu.type === "entity-path" && (
+              <EntityPathMenu
+                entities={entities}
+                onSelect={handleEntityPathSelect}
+                onClose={() => setContextMenu(null)}
+                x={contextMenu.x}
+                y={contextMenu.y}
+              />
+            )}
+            {contextMenu && contextMenu.type === "container-create" && (
+              <ContainerContextMenu
+                onSelect={handleComponentCreate}
+                onClose={() => setContextMenu(null)}
+                x={contextMenu.x}
+                y={contextMenu.y}
+              />
+            )}
+          </Box>
+        </DragManager>
+      </DndProvider>
+    </ChakraProvider>
   );
 }
 

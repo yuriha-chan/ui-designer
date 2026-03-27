@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useContext } from "react";
+import { Box, NativeSelect, Button } from "@chakra-ui/react";
 import { useDrag, useDrop, DropTargetMonitor } from "react-dnd";
 import { UIComponent, Entity, Screen } from "./types";
 import { DragItem, ItemTypes, DropResult } from "./dnd";
@@ -65,7 +66,6 @@ const ComponentNode: React.FC<{
     }, [component.id, component.type, parentId]);
 
     const { setRawDropTargetId } = useContext(DragContext)!;
-    const isContainer = component.type === "container";
 
     // Drag and drop hooks - always called but conditionally enabled
     const [{ isDragging: dragging }, drag] = useDrag(
@@ -196,7 +196,6 @@ const ComponentNode: React.FC<{
       [dragRef, dropRef, component.id]
     );
 
-
     const isOver = useDragSelector(
       (state) => state.currentDropTargetId === component.id
     );
@@ -235,8 +234,8 @@ const ComponentNode: React.FC<{
         : "cursor-default";
 
     return (
-      <div className="component-node">
-        <div
+      <Box className="component-node">
+        <Box
           ref={dragDropRef}
           className={`component-box ${cursorClass} depth-${depth} component-${component.type}`}
           onContextMenu={previewMode ? undefined : handleContextMenu}
@@ -247,54 +246,67 @@ const ComponentNode: React.FC<{
             transition: "all 0.2s ease",
           }}
         >
-          <div className="component-content">
+          <Box className="component-content">
             {component.type !== "container" && (
-              <div className="entity-path-display">
-                <div className="entity-label">{entity}</div>
-                {property && <div className="property-label">{property}</div>}
-              </div>
+              <Box className="entity-path-display">
+                <Box className="entity-label">{entity}</Box>
+                {property && <Box className="property-label">{property}</Box>}
+              </Box>
             )}
             {!previewMode && component.type === "button" && (
-              <div className="target-screen-selector">
-                <select
-                  value={component.targetScreen || ""}
-                  onChange={(e) =>
-                    onTargetScreenChange(component.id, e.target.value)
-                  }
-                  title={
-                    targetScreenName
-                      ? `Target: ${targetScreenName}`
-                      : "Select target screen"
-                  }
-                >
-                  <option value="">Select target screen</option>
-                  {screens.map((screen) => (
-                    <option key={screen.id} value={screen.id}>
-                      {screen.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Box className="target-screen-selector">
+                <NativeSelect.Root size="sm">
+                  <NativeSelect.Field
+                    value={component.targetScreen || ""}
+                    onChange={(e) =>
+                      onTargetScreenChange(component.id, e.target.value)
+                    }
+                    title={
+                      targetScreenName
+                        ? `Target: ${targetScreenName}`
+                        : "Select target screen"
+                    }
+                  >
+                    <option value="">Select target screen</option>
+                    {screens.map((screen) => (
+                      <option key={screen.id} value={screen.id}>
+                        {screen.name}
+                      </option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+              </Box>
             )}
             {previewMode && component.type === "button" && targetScreenName && (
-              <div className="target-screen-display">→ {targetScreenName}</div>
+              <Box className="target-screen-display">→ {targetScreenName}</Box>
             )}
-          </div>
+          </Box>
           {component.type === "container" && isOver && canDrop && (
-            <div className="insertion-preview" />
+            <Box className="insertion-preview" />
           )}
           {!previewMode && parentId && (
-            <div className="component-actions">
-              <button onClick={handleCopy} title="Copy">
+            <Box className="component-actions">
+              <Button
+                onClick={handleCopy}
+                title="Copy"
+                variant="ghost"
+                size="xs"
+              >
                 ⎘
-              </button>
-              <button onClick={() => onRemove(component.id)} title="Remove">
+              </Button>
+              <Button
+                onClick={() => onRemove(component.id)}
+                title="Remove"
+                variant="ghost"
+                size="xs"
+              >
                 ×
-              </button>
-            </div>
+              </Button>
+            </Box>
           )}
           {component.type === "container" && component.children.length > 0 && (
-            <div className="children-container">
+            <Box className="children-container">
               {sortComponentsBySExpression(component.children).map((child) => (
                 <ComponentNode
                   key={child.id}
@@ -314,10 +326,10 @@ const ComponentNode: React.FC<{
                   previewMode={previewMode}
                 />
               ))}
-            </div>
+            </Box>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   },
   (prev, next) =>
