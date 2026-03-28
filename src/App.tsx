@@ -1232,24 +1232,38 @@ function App() {
     if (!contextMenu) return;
     const { componentId, pendingComponentType } = contextMenu;
     if (pendingComponentType) {
-      // Auto-determine component type from entity path
-      const propertyType = getPropertyTypeFromPath(entityPath);
-      const componentType = propertyType === "number" ? "number" : "text";
-      addComponentToContainer(componentId, componentType, entityPath);
+      // Only auto-determine type for text/number, keep button/input as-is
+      if (
+        pendingComponentType === "text" ||
+        pendingComponentType === "number"
+      ) {
+        const propertyType = getPropertyTypeFromPath(entityPath);
+        const componentType = propertyType === "number" ? "number" : "text";
+        addComponentToContainer(componentId, componentType, entityPath);
+      } else {
+        addComponentToContainer(componentId, pendingComponentType, entityPath);
+      }
     } else {
-      // Auto-update component type based on entity path
-      const propertyType = getPropertyTypeFromPath(entityPath);
-      const componentType = propertyType === "number" ? "number" : "text";
+      // Auto-update component type based on entity path (only for text/number)
       updateEntityPath(componentId, entityPath);
-      // Also update component type
-      setScreens((prev) =>
-        prev.map((screen) => ({
-          ...screen,
-          components: screen.components.map((comp) =>
-            comp.id === componentId ? { ...comp, type: componentType } : comp
-          ),
-        }))
+      const propertyType = getPropertyTypeFromPath(entityPath);
+      const currentComponent = getCurrentComponents().find(
+        (c) => c.id === componentId
       );
+      if (
+        currentComponent &&
+        (currentComponent.type === "text" || currentComponent.type === "number")
+      ) {
+        const componentType = propertyType === "number" ? "number" : "text";
+        setScreens((prev) =>
+          prev.map((screen) => ({
+            ...screen,
+            components: screen.components.map((comp) =>
+              comp.id === componentId ? { ...comp, type: componentType } : comp
+            ),
+          }))
+        );
+      }
     }
     setContextMenu(null);
   };
