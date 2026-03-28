@@ -11,6 +11,7 @@ import {
   defaultSystem,
   Button,
   NativeSelect,
+  Select,
   Input,
   Box,
   Heading,
@@ -21,7 +22,9 @@ import {
   Flex,
   CloseButton,
   Tabs,
+  Portal,
 } from "@chakra-ui/react";
+import { createListCollection } from "@chakra-ui/react";
 import {
   sortComponentsBySExpression,
   isDescendant as isDescendantPure,
@@ -115,6 +118,14 @@ function App() {
   const [exportMode, setExportMode] = useState<"screen" | "storyboard">(
     "screen"
   );
+
+  const propertyTypeCollection = createListCollection({
+    items: [
+      { label: "string", value: "string" },
+      { label: "number", value: "number" },
+      { label: "entity", value: "entity" },
+    ],
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   type ContextMenuType = "entity-path" | "container-create";
   const [contextMenu, setContextMenu] = useState<{
@@ -1306,8 +1317,12 @@ function App() {
                         variant="subtle"
                       >
                         <Tabs.List>
-                          <Tabs.Trigger value="entities">Entities</Tabs.Trigger>
-                          <Tabs.Trigger value="screens">Screens</Tabs.Trigger>
+                          <Tabs.Trigger value="entities" color="gray.300">
+                            Entities
+                          </Tabs.Trigger>
+                          <Tabs.Trigger value="screens" color="gray.300">
+                            Screens
+                          </Tabs.Trigger>
                         </Tabs.List>
                       </Tabs.Root>
                       {panelType === "entities" ? (
@@ -1318,7 +1333,7 @@ function App() {
                               colorScheme="blue"
                               onClick={addEntity}
                             >
-                              Add Entity
+                              + Add Entity
                             </Button>
                           </HStack>
                           <VStack
@@ -1385,7 +1400,9 @@ function App() {
                                   <HStack gap={1}>
                                     <Button
                                       size="xs"
-                                      variant="ghost"
+                                      bg="green.500"
+                                      color="white"
+                                      _hover={{ bg: "green.600" }}
                                       onClick={() => addProperty(entityIndex)}
                                       title="Add property"
                                     >
@@ -1393,10 +1410,19 @@ function App() {
                                     </Button>
                                     <Button
                                       size="xs"
-                                      variant="ghost"
-                                      colorScheme="red"
+                                      bg="red.500"
+                                      color="white"
+                                      _hover={{ bg: "red.600" }}
                                       className="delete-entity-btn"
-                                      onClick={() => deleteEntity(entityIndex)}
+                                      onClick={() => {
+                                        if (
+                                          window.confirm(
+                                            `Delete entity "${entity.name}"?`
+                                          )
+                                        ) {
+                                          deleteEntity(entityIndex);
+                                        }
+                                      }}
                                       title="Delete entity"
                                     >
                                       ×
@@ -1458,6 +1484,10 @@ function App() {
                                           className="entity-property"
                                           fontSize="sm"
                                           cursor="pointer"
+                                          width="10em"
+                                          overflow="hidden"
+                                          textOverflow="ellipsis"
+                                          whiteSpace="nowrap"
                                           onClick={() => {
                                             setEditingPropertyIndex({
                                               entityIndex,
@@ -1466,14 +1496,20 @@ function App() {
                                             setEditingEntityName(prop.name);
                                           }}
                                         >
-                                          {entity.name} &gt; {prop.name}
+                                          {prop.name}
                                         </Box>
                                       )}
-                                      <NativeSelect.Root size="xs" width="70px">
-                                        <NativeSelect.Field
-                                          value={prop.type}
-                                          onChange={(e) => {
-                                            const newType = e.target.value as
+                                      <Box
+                                        as="span"
+                                        className={`type-select type-${prop.type}`}
+                                      >
+                                        <Select.Root
+                                          size="xs"
+                                          width="70px"
+                                          collection={propertyTypeCollection}
+                                          value={[prop.type]}
+                                          onValueChange={(details) => {
+                                            const newType = details.value[0] as
                                               | "string"
                                               | "number"
                                               | "entity";
@@ -1490,18 +1526,35 @@ function App() {
                                                 : undefined
                                             );
                                           }}
-                                          className="property-type-badge"
                                         >
-                                          <option value="string">string</option>
-                                          <option value="number">number</option>
-                                          <option value="entity">entity</option>
-                                        </NativeSelect.Field>
-                                        <NativeSelect.Indicator />
-                                      </NativeSelect.Root>
-                                      {prop.type === "entity" && (
+                                          <Select.Trigger className="property-type-badge">
+                                            <Select.ValueText />
+                                          </Select.Trigger>
+                                          <Select.Positioner>
+                                            <Select.Content>
+                                              {propertyTypeCollection.items.map(
+                                                (item) => (
+                                                  <Select.Item
+                                                    key={item.value}
+                                                    item={item}
+                                                  >
+                                                    <Select.ItemText>
+                                                      {item.label}
+                                                    </Select.ItemText>
+                                                  </Select.Item>
+                                                )
+                                              )}
+                                            </Select.Content>
+                                          </Select.Positioner>
+                                        </Select.Root>
+                                      </Box>
+                                      {prop.type === "entity" ? (
                                         <NativeSelect.Root
                                           size="xs"
                                           width="80px"
+                                          backgroundColor="gray.600"
+                                          color="white"
+                                          className="entity-type-select"
                                         >
                                           <NativeSelect.Field
                                             value={prop.entity_type || ""}
@@ -1525,15 +1578,28 @@ function App() {
                                           </NativeSelect.Field>
                                           <NativeSelect.Indicator />
                                         </NativeSelect.Root>
+                                      ) : (
+                                        <Box width="80px" />
                                       )}
                                       <Button
-                                        size="xs"
-                                        variant="ghost"
-                                        colorScheme="red"
+                                        size="2xs"
+                                        bg="red.500"
+                                        color="white"
+                                        _hover={{ bg: "red.600" }}
+                                        ml={1}
                                         className="delete-property-btn"
-                                        onClick={() =>
-                                          deleteProperty(entityIndex, propIndex)
-                                        }
+                                        onClick={() => {
+                                          if (
+                                            window.confirm(
+                                              `Delete property "${prop.name}"?`
+                                            )
+                                          ) {
+                                            deleteProperty(
+                                              entityIndex,
+                                              propIndex
+                                            );
+                                          }
+                                        }}
                                         title="Delete property"
                                       >
                                         ×
@@ -1622,6 +1688,11 @@ function App() {
                                   <Box
                                     className="screen-name"
                                     fontWeight="medium"
+                                    color={
+                                      screen.id === currentScreenId
+                                        ? "gray.800"
+                                        : "inherit"
+                                    }
                                   >
                                     {screen.name}
                                   </Box>

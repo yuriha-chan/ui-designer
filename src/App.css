@@ -402,3 +402,54 @@ input[type="text"]:focus {
   margin-left: 20px;
   margin-top: 0.5rem;
 }
+
+/* Entities panel select dropdown styling */
+.entity-properties select {
+  color: #333;
+  background-color: #fff;
+}
+
+.entity-properties select option {
+  background-color: #fff;
+  color: #333;
+}
+
+/* Type select color coding */
+.type-select {
+  font-weight: bold;
+}
+
+.type-select.type-string {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.type-select.type-number {
+  background-color: #22c55e;
+  color: white;
+}
+
+.type-select.type-entity {
+  background-color: #eab308;
+  color: #333;
+}
+
+.entity-type-select {
+  font-weight: bold;
+}
+
+/* Select dropdown menu styling */
+[data-part="content"] {
+  background-color: #333 !important;
+  color: #fff !important;
+  border: 1px solid #555 !important;
+}
+
+[data-part="item"][data-highlighted] {
+  background-color: #555 !important;
+}
+
+[data-part="item"] {
+  background-color: transparent !important;
+  color: #fff !important;
+}
