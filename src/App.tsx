@@ -125,6 +125,18 @@ function App() {
     pendingComponentType?: "text" | "number" | "button" | "input"; // エンティティパス選択待ちのコンポーネントタイプ
   } | null>(null);
 
+  // Entity editing state
+  const [editingEntityName, setEditingEntityName] = useState<string | null>(
+    null
+  );
+  const [editingEntityIndex, setEditingEntityIndex] = useState<number | null>(
+    null
+  );
+  const [editingPropertyIndex, setEditingPropertyIndex] = useState<{
+    entityIndex: number;
+    propertyIndex: number;
+  } | null>(null);
+
   // 現在の画面のコンポーネントを取得するヘルパー関数
   const getCurrentComponents = useCallback((): UIComponent[] => {
     const currentScreen = screens.find(
@@ -302,6 +314,202 @@ function App() {
     setIsEditingScreenName(false);
     setEditingScreenName("");
   }, [editingScreenName, currentScreenId, renameScreen]);
+
+  // Entity CRUD functions
+  const addEntity = useCallback(() => {
+    const newEntity: Entity = {
+      name: "New Entity",
+      properties: [],
+    };
+    setEntities((prev) => [...prev, newEntity]);
+  }, []);
+
+  const deleteEntity = useCallback((entityIndex: number) => {
+    setEntities((prev) => prev.filter((_, i) => i !== entityIndex));
+  }, []);
+
+  const updateEntityName = useCallback(
+    (entityIndex: number, newName: string) => {
+      setEntities((prev) =>
+        prev.map((entity, i) =>
+          i === entityIndex ? { ...entity, name: newName } : entity
+        )
+      );
+      // Update entity paths in components
+      updateAllEntityPaths(entityIndex, newName, null, null);
+    },
+    []
+  );
+
+  const addProperty = useCallback((entityIndex: number) => {
+    const newProperty = { name: "newProperty", type: "string" as const };
+    setEntities((prev) =>
+      prev.map((entity, i) =>
+        i === entityIndex
+          ? { ...entity, properties: [...entity.properties, newProperty] }
+          : entity
+      )
+    );
+  }, []);
+
+  const deleteProperty = useCallback(
+    (entityIndex: number, propertyIndex: number) => {
+      setEntities((prev) =>
+        prev.map((entity, i) =>
+          i === entityIndex
+            ? {
+                ...entity,
+                properties: entity.properties.filter(
+                  (_, p) => p !== propertyIndex
+                ),
+              }
+            : entity
+        )
+      );
+    },
+    []
+  );
+
+  const updatePropertyName = useCallback(
+    (entityIndex: number, propertyIndex: number, newName: string) => {
+      const oldPropertyName =
+        entities[entityIndex]?.properties[propertyIndex]?.name;
+      setEntities((prev) =>
+        prev.map((entity, i) =>
+          i === entityIndex
+            ? {
+                ...entity,
+                properties: entity.properties.map((prop, p) =>
+                  p === propertyIndex ? { ...prop, name: newName } : prop
+                ),
+              }
+            : entity
+        )
+      );
+      // Update entity paths in components
+      updateAllEntityPaths(
+        null,
+        null,
+        entityIndex,
+        propertyIndex,
+        oldPropertyName,
+        newName
+      );
+    },
+    [entities]
+  );
+
+  const updatePropertyType = useCallback(
+    (
+      entityIndex: number,
+      propertyIndex: number,
+      newType: "string" | "number" | "entity",
+      newEntityType?: string
+    ) => {
+      setEntities((prev) =>
+        prev.map((entity, i) =>
+          i === entityIndex
+            ? {
+                ...entity,
+                properties: entity.properties.map((prop, p) =>
+                  p === propertyIndex
+                    ? {
+                        ...prop,
+                        type: newType,
+                        entity_type:
+                          newType === "entity" ? newEntityType : undefined,
+                      }
+                    : prop
+                ),
+              }
+            : entity
+        )
+      );
+    },
+    []
+  );
+
+  // Update entity paths across all components when entity/property names change
+  const updateAllEntityPaths = useCallback(
+    (
+      entityIndex: number | null,
+      newEntityName: string | null,
+      propertyEntityIndex: number | null,
+      propertyIndex: number | null,
+      oldPropertyName?: string,
+      newPropertyName?: string
+    ) => {
+      setScreens((prevScreens) => {
+        return prevScreens.map((screen) => ({
+          ...screen,
+          components: updateComponentsEntityPaths(
+            screen.components,
+            entityIndex,
+            newEntityName,
+            propertyEntityIndex,
+            propertyIndex,
+            oldPropertyName,
+            newPropertyName,
+            entities
+          ),
+        }));
+      });
+    },
+    [entities]
+  );
+
+  // Recursive function to update entity paths in components
+  const updateComponentsEntityPaths = (
+    components: UIComponent[],
+    entityIndex: number | null,
+    newEntityName: string | null,
+    propertyEntityIndex: number | null,
+    propertyIndex: number | null,
+    oldPropertyName: string | undefined,
+    newPropertyName: string | undefined,
+    currentEntities: Entity[]
+  ): UIComponent[] => {
+    return components.map((comp) => {
+      let newEntityPath = comp.entityPath;
+
+      if (newEntityPath && entityIndex !== null && newEntityName !== null) {
+        const oldEntityName = currentEntities[entityIndex]?.name;
+        if (oldEntityName && newEntityPath.startsWith(oldEntityName + ">")) {
+          newEntityPath = newEntityPath.replace(oldEntityName, newEntityName);
+        }
+      }
+
+      if (
+        newEntityPath &&
+        propertyEntityIndex !== null &&
+        propertyIndex !== null &&
+        oldPropertyName &&
+        newPropertyName
+      ) {
+        const entityName = currentEntities[propertyEntityIndex]?.name;
+        const oldPath = `${entityName}>${oldPropertyName}`;
+        const newPath = `${entityName}>${newPropertyName}`;
+        if (newEntityPath.startsWith(oldPath)) {
+          newEntityPath = newEntityPath.replace(oldPath, newPath);
+        }
+      }
+
+      return {
+        ...comp,
+        entityPath: newEntityPath,
+        children: updateComponentsEntityPaths(
+          comp.children,
+          entityIndex,
+          newEntityName,
+          propertyEntityIndex,
+          propertyIndex,
+          oldPropertyName,
+          newPropertyName,
+          currentEntities
+        ),
+      };
+    });
+  };
 
   // Auto-recovery: Load from localStorage on mount
   useEffect(() => {
@@ -1104,39 +1312,233 @@ function App() {
                       </Tabs.Root>
                       {panelType === "entities" ? (
                         <Box className="entities-panel">
+                          <HStack mb={2}>
+                            <Button
+                              size="sm"
+                              colorScheme="blue"
+                              onClick={addEntity}
+                            >
+                              Add Entity
+                            </Button>
+                          </HStack>
                           <VStack
                             className="entities-list"
                             gap={2}
                             align="stretch"
                           >
-                            {entities.map((entity) => (
+                            {entities.map((entity, entityIndex) => (
                               <Box
-                                key={entity.name}
+                                key={entity.name + entityIndex}
                                 className="entity"
                                 borderWidth="1px"
                                 borderRadius="md"
                                 p={2}
                               >
-                                <Box
-                                  className="entity-name"
-                                  fontWeight="bold"
-                                  mb={1}
-                                >
-                                  {entity.name}
-                                </Box>
+                                <HStack justify="space-between" mb={1}>
+                                  {editingEntityIndex === entityIndex ? (
+                                    <Input
+                                      size="sm"
+                                      value={editingEntityName || entity.name}
+                                      onChange={(e) =>
+                                        setEditingEntityName(e.target.value)
+                                      }
+                                      onBlur={() => {
+                                        if (editingEntityName?.trim()) {
+                                          updateEntityName(
+                                            entityIndex,
+                                            editingEntityName.trim()
+                                          );
+                                        }
+                                        setEditingEntityIndex(null);
+                                        setEditingEntityName(null);
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          if (editingEntityName?.trim()) {
+                                            updateEntityName(
+                                              entityIndex,
+                                              editingEntityName.trim()
+                                            );
+                                          }
+                                          setEditingEntityIndex(null);
+                                          setEditingEntityName(null);
+                                        } else if (e.key === "Escape") {
+                                          setEditingEntityIndex(null);
+                                          setEditingEntityName(null);
+                                        }
+                                      }}
+                                      autoFocus
+                                    />
+                                  ) : (
+                                    <Box
+                                      className="entity-name"
+                                      fontWeight="bold"
+                                      cursor="pointer"
+                                      onClick={() => {
+                                        setEditingEntityIndex(entityIndex);
+                                        setEditingEntityName(entity.name);
+                                      }}
+                                    >
+                                      {entity.name}
+                                    </Box>
+                                  )}
+                                  <HStack gap={1}>
+                                    <Button
+                                      size="xs"
+                                      variant="ghost"
+                                      onClick={() => addProperty(entityIndex)}
+                                      title="Add property"
+                                    >
+                                      +
+                                    </Button>
+                                    <Button
+                                      size="xs"
+                                      variant="ghost"
+                                      colorScheme="red"
+                                      className="delete-entity-btn"
+                                      onClick={() => deleteEntity(entityIndex)}
+                                      title="Delete entity"
+                                    >
+                                      ×
+                                    </Button>
+                                  </HStack>
+                                </HStack>
                                 <VStack
                                   className="entity-properties"
                                   gap={1}
                                   align="stretch"
                                 >
-                                  {entity.properties.map((prop) => (
-                                    <Box
-                                      key={prop.name}
-                                      className="entity-property"
-                                      fontSize="sm"
+                                  {entity.properties.map((prop, propIndex) => (
+                                    <HStack
+                                      key={prop.name + propIndex}
+                                      className="property-row"
+                                      gap={1}
                                     >
-                                      {entity.name} &gt; {prop.name}
-                                    </Box>
+                                      {editingPropertyIndex?.entityIndex ===
+                                        entityIndex &&
+                                      editingPropertyIndex?.propertyIndex ===
+                                        propIndex ? (
+                                        <Input
+                                          size="xs"
+                                          value={editingEntityName || prop.name}
+                                          onChange={(e) =>
+                                            setEditingEntityName(e.target.value)
+                                          }
+                                          onBlur={() => {
+                                            if (editingEntityName?.trim()) {
+                                              updatePropertyName(
+                                                entityIndex,
+                                                propIndex,
+                                                editingEntityName.trim()
+                                              );
+                                            }
+                                            setEditingPropertyIndex(null);
+                                            setEditingEntityName(null);
+                                          }}
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                              if (editingEntityName?.trim()) {
+                                                updatePropertyName(
+                                                  entityIndex,
+                                                  propIndex,
+                                                  editingEntityName.trim()
+                                                );
+                                              }
+                                              setEditingPropertyIndex(null);
+                                              setEditingEntityName(null);
+                                            } else if (e.key === "Escape") {
+                                              setEditingPropertyIndex(null);
+                                              setEditingEntityName(null);
+                                            }
+                                          }}
+                                          autoFocus
+                                        />
+                                      ) : (
+                                        <Box
+                                          className="entity-property"
+                                          fontSize="sm"
+                                          cursor="pointer"
+                                          onClick={() => {
+                                            setEditingPropertyIndex({
+                                              entityIndex,
+                                              propertyIndex: propIndex,
+                                            });
+                                            setEditingEntityName(prop.name);
+                                          }}
+                                        >
+                                          {entity.name} &gt; {prop.name}
+                                        </Box>
+                                      )}
+                                      <NativeSelect.Root size="xs" width="70px">
+                                        <NativeSelect.Field
+                                          value={prop.type}
+                                          onChange={(e) => {
+                                            const newType = e.target.value as
+                                              | "string"
+                                              | "number"
+                                              | "entity";
+                                            const defaultEntityType =
+                                              entities.find(
+                                                (en) => en.name !== entity.name
+                                              )?.name;
+                                            updatePropertyType(
+                                              entityIndex,
+                                              propIndex,
+                                              newType,
+                                              newType === "entity"
+                                                ? defaultEntityType
+                                                : undefined
+                                            );
+                                          }}
+                                          className="property-type-badge"
+                                        >
+                                          <option value="string">string</option>
+                                          <option value="number">number</option>
+                                          <option value="entity">entity</option>
+                                        </NativeSelect.Field>
+                                        <NativeSelect.Indicator />
+                                      </NativeSelect.Root>
+                                      {prop.type === "entity" && (
+                                        <NativeSelect.Root
+                                          size="xs"
+                                          width="80px"
+                                        >
+                                          <NativeSelect.Field
+                                            value={prop.entity_type || ""}
+                                            onChange={(e) => {
+                                              updatePropertyType(
+                                                entityIndex,
+                                                propIndex,
+                                                "entity",
+                                                e.target.value
+                                              );
+                                            }}
+                                          >
+                                            {entities.map((en) => (
+                                              <option
+                                                key={en.name}
+                                                value={en.name}
+                                              >
+                                                {en.name}
+                                              </option>
+                                            ))}
+                                          </NativeSelect.Field>
+                                          <NativeSelect.Indicator />
+                                        </NativeSelect.Root>
+                                      )}
+                                      <Button
+                                        size="xs"
+                                        variant="ghost"
+                                        colorScheme="red"
+                                        className="delete-property-btn"
+                                        onClick={() =>
+                                          deleteProperty(entityIndex, propIndex)
+                                        }
+                                        title="Delete property"
+                                      >
+                                        ×
+                                      </Button>
+                                    </HStack>
                                   ))}
                                 </VStack>
                               </Box>

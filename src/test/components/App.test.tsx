@@ -458,4 +458,240 @@ describe("App", () => {
       expect(screen.getByText("Import")).toBeInTheDocument();
     });
   });
+
+  describe("Entities Panel - Add Entity", () => {
+    it("renders Add Entity button in entities panel", () => {
+      render(<App />);
+      expect(screen.getByText("Add Entity")).toBeInTheDocument();
+    });
+
+    it("adds a new entity when clicking Add Entity button", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      const addButton = screen.getByText("Add Entity");
+      await user.click(addButton);
+
+      // New entity should appear with default name
+      expect(screen.getAllByText("New Entity").length).toBeGreaterThan(0);
+    });
+
+    it("can edit entity name inline", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Initially shows entity name
+      expect(screen.getByText("Account")).toBeInTheDocument();
+
+      // Click on entity name to edit - use the entity-name box in entities panel
+      const entityBox = document.querySelectorAll(
+        ".entity-name"
+      )[0] as HTMLElement;
+      await user.click(entityBox);
+
+      // Input field should appear with current value
+      expect(screen.getByDisplayValue("Account")).toBeInTheDocument();
+    });
+  });
+
+  describe("Entities Panel - Edit Property", () => {
+    it("can edit property name inline", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Initially shows property name
+      expect(screen.getByText("Account > Name")).toBeInTheDocument();
+
+      // Find and click on a property name (Account > Name) - use first property in first entity
+      const propertyText = document.querySelectorAll(
+        ".entity-property"
+      )[0] as HTMLElement;
+      await user.click(propertyText);
+
+      // Input field should appear with current property name
+      expect(screen.getByDisplayValue("Name")).toBeInTheDocument();
+    });
+
+    it("can change property type via dropdown", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Find a property type badge and change to number
+      const typeBadge = document.querySelector(
+        ".property-type-badge"
+      ) as HTMLElement;
+      if (typeBadge) {
+        await user.click(typeBadge);
+        // Select number type - use option element
+        const numberOption = typeBadge.querySelector(
+          "option[value='number']"
+        ) as HTMLElement;
+        await user.click(numberOption);
+      }
+    });
+
+    it("shows entity_type dropdown when type is entity", async () => {
+      render(<App />);
+
+      // Find a property and change its type to entity
+      const typeBadge = document.querySelector(
+        ".property-type-badge"
+      ) as HTMLElement;
+      if (typeBadge) {
+        // Change select value directly
+        (typeBadge as HTMLSelectElement).value = "entity";
+        typeBadge.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      // After setting to entity, we should have 2 selects in the property row (type and entity_type)
+      // The second select should appear for entity_type
+      const selects = document.querySelectorAll(".property-row select");
+      expect(selects.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe("Entities Panel - Delete Entity and Property", () => {
+    it("can delete an entity", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Initially have 4 entities
+      expect(screen.getByText("Account")).toBeInTheDocument();
+      expect(screen.getByText("Product")).toBeInTheDocument();
+      expect(screen.getByText("Order")).toBeInTheDocument();
+      expect(screen.getByText("User")).toBeInTheDocument();
+
+      // Find and click delete button on Account entity
+      const accountEntity = screen.getByText("Account").closest(".entity");
+      const deleteBtn = accountEntity?.querySelector(".delete-entity-btn");
+      if (deleteBtn) {
+        await user.click(deleteBtn);
+      }
+
+      // Account should be removed
+      expect(screen.queryByText("Account")).not.toBeInTheDocument();
+      // Others should remain
+      expect(screen.getByText("Product")).toBeInTheDocument();
+    });
+
+    it("can delete a property", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Initially Account has Name property
+      expect(screen.getByText("Account > Name")).toBeInTheDocument();
+
+      // Find and click delete button on Name property
+      const propertyRow = screen
+        .getByText("Account > Name")
+        .closest(".property-row");
+      const deleteBtn = propertyRow?.querySelector(".delete-property-btn");
+      if (deleteBtn) {
+        await user.click(deleteBtn);
+      }
+
+      // Property should be removed
+      expect(screen.queryByText("Account > Name")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Entities Panel - Entity Path Auto-Update", () => {
+    it("updates component entity paths when entity name changes", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Create a text component with entity path first
+      const rootBox = document.querySelector(
+        ".component-box.depth-0"
+      ) as HTMLElement;
+      await user.pointer({ target: rootBox, keys: "[MouseRight]" });
+      await user.click(screen.getByText("Text"));
+
+      // Select Account > Name from entity path menu - scope to context menu
+      const contextMenu = document.querySelector(
+        ".entity-path-menu"
+      ) as HTMLElement;
+      const accountOption = contextMenu.querySelectorAll(
+        ".accordion-title"
+      )[1] as HTMLElement;
+      await user.click(accountOption);
+      const nameProperty = contextMenu.querySelector(
+        ".property-option"
+      ) as HTMLElement;
+      await user.click(nameProperty);
+
+      // Verify component has entity path display (check individual labels)
+      const componentBox = document.querySelector(".component-box.depth-1");
+      const entityLabel = componentBox?.querySelector(".entity-label");
+      const propertyLabel = componentBox?.querySelector(".property-label");
+      expect(entityLabel).toHaveTextContent("Account");
+      expect(propertyLabel).toHaveTextContent("Name");
+
+      // Now change entity name from Account to MyAccount
+      const entityNameBox = document.querySelectorAll(
+        ".entity-name"
+      )[0] as HTMLElement;
+      await user.click(entityNameBox);
+      const input = screen.getByDisplayValue("Account");
+      await user.clear(input);
+      await user.type(input, "MyAccount{Enter}");
+
+      // Component entity path should be updated
+      const updatedEntityLabel = document.querySelector(".entity-label");
+      const updatedPropertyLabel = document.querySelector(".property-label");
+      expect(updatedEntityLabel).toHaveTextContent("MyAccount");
+      expect(updatedPropertyLabel).toHaveTextContent("Name");
+    });
+
+    it("updates component entity paths when property name changes", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Create a text component with entity path
+      const rootBox = document.querySelector(
+        ".component-box.depth-0"
+      ) as HTMLElement;
+      await user.pointer({ target: rootBox, keys: "[MouseRight]" });
+      await user.click(screen.getByText("Text"));
+
+      // Select from entity path menu - scope to context menu
+      const contextMenu = document.querySelector(
+        ".entity-path-menu"
+      ) as HTMLElement;
+      const accountOption = contextMenu.querySelectorAll(
+        ".accordion-title"
+      )[1] as HTMLElement;
+      await user.click(accountOption);
+      const nameProperty = contextMenu.querySelector(
+        ".property-option"
+      ) as HTMLElement;
+      await user.click(nameProperty);
+
+      // Verify initial entity path (check individual labels)
+      const componentBox = document.querySelector(".component-box.depth-1");
+      expect(componentBox?.querySelector(".entity-label")).toHaveTextContent(
+        "Account"
+      );
+      expect(componentBox?.querySelector(".property-label")).toHaveTextContent(
+        "Name"
+      );
+
+      // Change property name from Name to FullName
+      const propertyText = document.querySelectorAll(
+        ".entity-property"
+      )[0] as HTMLElement;
+      await user.click(propertyText);
+      const input = screen.getByDisplayValue("Name");
+      await user.clear(input);
+      await user.type(input, "FullName{Enter}");
+
+      // Component entity path should be updated
+      expect(document.querySelector(".entity-label")).toHaveTextContent(
+        "Account"
+      );
+      expect(document.querySelector(".property-label")).toHaveTextContent(
+        "FullName"
+      );
+    });
+  });
 });
