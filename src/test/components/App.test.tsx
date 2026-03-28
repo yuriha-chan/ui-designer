@@ -391,4 +391,71 @@ describe("App", () => {
       alertSpy.mockRestore();
     });
   });
+
+  describe("side panel tabs", () => {
+    it("renders side panel with tabs for Entities and Screens", () => {
+      render(<App />);
+      expect(screen.getByText("Entities")).toBeInTheDocument();
+      expect(screen.getByText("Screens")).toBeInTheDocument();
+    });
+
+    it("shows entities panel by default", () => {
+      render(<App />);
+      expect(screen.getByText("Account")).toBeInTheDocument();
+      expect(screen.getByText("Product")).toBeInTheDocument();
+    });
+
+    it("switches to screens panel when Screens tab is clicked", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      const screensTab = screen.getByText("Screens");
+      await user.click(screensTab);
+
+      expect(
+        screen.getByPlaceholderText("New screen name")
+      ).toBeInTheDocument();
+    });
+
+    it("switches back to entities panel when Entities tab is clicked", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      const screensTab = screen.getByText("Screens");
+      await user.click(screensTab);
+
+      const entitiesTab = screen.getByText("Entities");
+      await user.click(entitiesTab);
+
+      expect(screen.getByText("Account")).toBeInTheDocument();
+    });
+  });
+
+  describe("toolbar icons", () => {
+    it("renders undo button with icon", () => {
+      render(<App />);
+      const undoButton = document.querySelector(
+        'button[title="Undo (Ctrl+Z)"]'
+      );
+      expect(undoButton).not.toBeNull();
+    });
+
+    it("renders redo button with icon", () => {
+      render(<App />);
+      const redoButton = document.querySelector(
+        'button[title="Redo (Ctrl+Shift+Z)"]'
+      );
+      expect(redoButton).not.toBeNull();
+    });
+
+    it("renders export button", () => {
+      render(<App />);
+      expect(screen.getByText("Export")).toBeInTheDocument();
+    });
+
+    it("renders import button", () => {
+      render(<App />);
+      expect(screen.getByText("Import")).toBeInTheDocument();
+    });
+  });
 });

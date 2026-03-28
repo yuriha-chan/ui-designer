@@ -20,6 +20,7 @@ import {
   Text,
   Flex,
   CloseButton,
+  Tabs,
 } from "@chakra-ui/react";
 import {
   sortComponentsBySExpression,
@@ -954,6 +955,21 @@ function App() {
                     size="sm"
                     title="Undo (Ctrl+Z)"
                   >
+                    <Box as="span" mr={1}>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 7v6h6" />
+                        <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+                      </svg>
+                    </Box>
                     Undo
                   </Button>
                   <Button
@@ -963,6 +979,21 @@ function App() {
                     size="sm"
                     title="Redo (Ctrl+Shift+Z)"
                   >
+                    <Box as="span" mr={1}>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 7v6h-6" />
+                        <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
+                      </svg>
+                    </Box>
                     Redo
                   </Button>
                   <Button
@@ -985,9 +1016,41 @@ function App() {
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
                   <Button onClick={handleExport} colorScheme="green" size="sm">
+                    <Box as="span" mr={1}>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                    </Box>
                     Export
                   </Button>
                   <Button onClick={handleImport} colorScheme="purple" size="sm">
+                    <Box as="span" mr={1}>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                    </Box>
                     Import
                   </Button>
                   <input
@@ -1027,26 +1090,18 @@ function App() {
                 {!previewMode && (
                   <Box className="side-panel">
                     <Box className="side-panel-content">
-                      <HStack className="panel-switcher" gap={2}>
-                        <Button
-                          colorScheme={
-                            panelType === "entities" ? "blue" : "gray"
-                          }
-                          onClick={() => setPanelType("entities")}
-                          size="sm"
-                        >
-                          Entities
-                        </Button>
-                        <Button
-                          colorScheme={
-                            panelType === "screens" ? "blue" : "gray"
-                          }
-                          onClick={() => setPanelType("screens")}
-                          size="sm"
-                        >
-                          Screens
-                        </Button>
-                      </HStack>
+                      <Tabs.Root
+                        value={panelType}
+                        onValueChange={(details) =>
+                          setPanelType(details.value as "entities" | "screens")
+                        }
+                        variant="subtle"
+                      >
+                        <Tabs.List>
+                          <Tabs.Trigger value="entities">Entities</Tabs.Trigger>
+                          <Tabs.Trigger value="screens">Screens</Tabs.Trigger>
+                        </Tabs.List>
+                      </Tabs.Root>
                       {panelType === "entities" ? (
                         <Box className="entities-panel">
                           <VStack
@@ -1118,6 +1173,21 @@ function App() {
                               size="sm"
                               colorScheme="blue"
                             >
+                              <Box as="span" mr={1}>
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <line x1="12" y1="5" x2="12" y2="19" />
+                                  <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                              </Box>
                               Add
                             </Button>
                           </HStack>
