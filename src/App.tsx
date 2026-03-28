@@ -941,17 +941,22 @@ function App() {
       const isExpanded = expandedPaths.has(currentPath);
 
       return (
-        <Box pl={depth * 4}>
+        <Box>
           <Box
             className="property-option"
-            p={2}
+            p={1}
             cursor="pointer"
             _hover={{ bg: "gray.100" }}
             display="flex"
             alignItems="center"
-            gap={2}
+            width="100%"
           >
-            <Box flex="1" onClick={() => onSelect(currentPath)}>
+            <Box
+              flex="1"
+              onClick={() => onSelect(currentPath)}
+              textAlign="left"
+            >
+              {"  ".repeat(depth)}
               {property.name}
             </Box>
             {isEntityType && nestedEntity && (
@@ -973,18 +978,16 @@ function App() {
               </Box>
             )}
           </Box>
-          {isExpanded && nestedEntity && (
-            <Box>
-              {nestedEntity.properties.map((nestedProp) => (
-                <PropertyOption
-                  key={nestedProp.name}
-                  property={nestedProp}
-                  basePath={currentPath}
-                  depth={depth + 1}
-                />
-              ))}
-            </Box>
-          )}
+          {isExpanded &&
+            nestedEntity &&
+            nestedEntity.properties.map((nestedProp) => (
+              <PropertyOption
+                key={nestedProp.name}
+                property={nestedProp}
+                basePath={currentPath}
+                depth={depth + 1}
+              />
+            ))}
         </Box>
       );
     };
@@ -1026,7 +1029,7 @@ function App() {
                 ...
               </Box>
             </Accordion.ItemTrigger>
-            <Accordion.ItemContent className="accordion-content" p={4}>
+            <Accordion.ItemContent className="accordion-content" p={2}>
               <Accordion.ItemBody>Clear entity path</Accordion.ItemBody>
             </Accordion.ItemContent>
           </Accordion.Item>
@@ -1042,7 +1045,7 @@ function App() {
                 </Box>
                 <Accordion.ItemIndicator />
               </Accordion.ItemTrigger>
-              <Accordion.ItemContent className="accordion-content" p={4}>
+              <Accordion.ItemContent className="accordion-content" p={2}>
                 <Accordion.ItemBody>
                   {entity.properties.map((property) => (
                     <PropertyOption
