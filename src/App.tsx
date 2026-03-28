@@ -451,21 +451,24 @@ function App() {
         )
       );
 
-      // Update affected components' entity paths
+      // Update affected components' entity paths in ALL screens
       if (affectedComponentIds.size > 0) {
-        updateCurrentScreenComponents((comps) =>
-          comps.map((comp) =>
-            updateComponentEntityPath(
-              comp,
-              affectedComponentIds,
-              oldName,
-              newName
-            )
-          )
+        setScreens((prevScreens) =>
+          prevScreens.map((screen) => ({
+            ...screen,
+            components: screen.components.map((comp) =>
+              updateComponentEntityPath(
+                comp,
+                affectedComponentIds,
+                oldName,
+                newName
+              )
+            ),
+          }))
         );
       }
     },
-    [entities, entityPathMap, updateCurrentScreenComponents]
+    [entities, entityPathMap]
   );
 
   const addProperty = useCallback((entityIndex: number) => {
@@ -525,23 +528,26 @@ function App() {
         )
       );
 
-      // Update affected components' entity paths
+      // Update affected components' entity paths in ALL screens
       if (affectedComponentIds.size > 0) {
         const oldPath = `${entityName}>${oldPropertyName}`;
         const newPath = `${entityName}>${newName}`;
-        updateCurrentScreenComponents((comps) =>
-          comps.map((comp) =>
-            updateComponentEntityPathByPropertyRename(
-              comp,
-              affectedComponentIds,
-              oldPath,
-              newPath
-            )
-          )
+        setScreens((prevScreens) =>
+          prevScreens.map((screen) => ({
+            ...screen,
+            components: screen.components.map((comp) =>
+              updateComponentEntityPathByPropertyRename(
+                comp,
+                affectedComponentIds,
+                oldPath,
+                newPath
+              )
+            ),
+          }))
         );
       }
     },
-    [entities, entityPathMap, updateCurrentScreenComponents]
+    [entities, entityPathMap]
   );
 
   const updatePropertyType = useCallback(
