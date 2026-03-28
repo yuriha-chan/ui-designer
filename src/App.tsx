@@ -6,7 +6,6 @@ import {
   UIComponent,
   Entity,
   Screen,
-  EntityProperty,
   PropertyType,
   ComponentType,
 } from "./types";
@@ -18,19 +17,12 @@ import {
   defaultSystem,
   Button,
   NativeSelect,
-  Select,
   Input,
   Box,
   Heading,
-  VStack,
   HStack,
-  Accordion,
-  Text,
-  Flex,
-  CloseButton,
   Tabs,
 } from "@chakra-ui/react";
-import { createListCollection } from "@chakra-ui/react";
 import {
   sortComponentsBySExpression,
   isDescendant as isDescendantPure,
@@ -41,6 +33,10 @@ import {
 } from "./componentTree";
 import { buildEntityPathMap, type EntityPathMap } from "./entityPathMap";
 import { ComponentNode } from "./ComponentNode";
+import { EntityPathMenu } from "./components/EntityPathMenu";
+import { ContainerContextMenu } from "./components/ContainerContextMenu";
+import { EntitiesPanel } from "./components/EntitiesPanel";
+import { ScreensPanel } from "./components/ScreensPanel";
 import "./App.css";
 
 // サンプルエンティティ定義
@@ -126,21 +122,6 @@ function App() {
     "screen"
   );
 
-  const propertyTypeCollection = createListCollection({
-    items: [
-      { label: "string", value: "string" },
-      { label: "number", value: "number" },
-      { label: "entity", value: "entity" },
-      { label: "function", value: "function" },
-    ],
-  });
-
-  const propertyTypeColors: Record<PropertyType, string> = {
-    string: "blue.500",
-    number: "green.500",
-    entity: "orange.500",
-    function: "purple.500",
-  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   type ContextMenuType = "entity-path" | "container-create";
   const [contextMenu, setContextMenu] = useState<{
@@ -368,11 +349,6 @@ function App() {
     },
     [currentScreenId, renameScreen]
   );
-
-  // Sanitize entity/property names: trim spaces and replace invalid characters
-  const sanitizeName = (name: string): string => {
-    return name.trim().replace(/[:>]/g, "-");
-  };
 
   // Entity CRUD functions
   const addEntity = useCallback(() => {
@@ -948,316 +924,6 @@ function App() {
     };
   }, [handleFileChange]);
 
-  // エンティティパス選択メニューコンポーネント
-  const EntityPathMenu: React.FC<{
-    entities: Entity[];
-    onSelect: (entityPath: string) => void;
-    onClose: () => void;
-    x: number;
-    y: number;
-    componentType?: "text" | "number" | "button" | "input";
-  }> = ({ entities, onSelect, onClose, x, y, componentType }) => {
-    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-    const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
-
-    const MENU_MAX_HEIGHT = 400;
-    const isNearBottom = y + MENU_MAX_HEIGHT > window.innerHeight;
-    const menuTop = isNearBottom ? undefined : y;
-    const menuBottom = isNearBottom ? 0 : undefined;
-
-    const findEntity = (name: string) => entities.find((e) => e.name === name);
-
-    const placeholderOptions =
-      componentType === "button" || componentType === undefined
-        ? ["OK", "Cancel", "Select", "Delete", "New", "..."]
-        : componentType === "number"
-          ? ["12..."]
-          : ["..."];
-
-    const handleValueChange = (details: { value: string[] }) => {
-      const value = details.value;
-      if (value.length === 0) {
-        setExpandedIndex(null);
-      } else {
-        const firstValue = value[0];
-        const num = parseInt(firstValue, 10);
-        if (!isNaN(num)) {
-          setExpandedIndex(num);
-        }
-      }
-    };
-
-    const toggleExpanded = (path: string) => {
-      setExpandedPaths((prev) => {
-        const next = new Set(prev);
-        if (next.has(path)) {
-          next.delete(path);
-        } else {
-          next.add(path);
-        }
-        return next;
-      });
-    };
-
-    const PropertyOption: React.FC<{
-      property: EntityProperty;
-      basePath: string;
-      depth: number;
-    }> = ({ property, basePath, depth }) => {
-      const isEntityType = property.type === "entity" && property.entity_type;
-      const nestedEntity = isEntityType
-        ? findEntity(property.entity_type!)
-        : null;
-
-      const currentPath = basePath
-        ? `${basePath}>${property.name}`
-        : property.name;
-      const isExpanded = expandedPaths.has(currentPath);
-
-      const handleClick = () => {
-        if (isEntityType && nestedEntity) {
-          toggleExpanded(currentPath);
-        } else {
-          onSelect(currentPath);
-        }
-      };
-
-      return (
-        <Box>
-          <Box
-            className="property-option"
-            p={1}
-            cursor="pointer"
-            _hover={{ bg: "gray.100" }}
-            display="flex"
-            alignItems="center"
-            width="100%"
-          >
-            <Box flex="1" onClick={handleClick} textAlign="left" pl={depth * 4}>
-              {property.name}
-            </Box>
-            {isEntityType && nestedEntity && (
-              <Box
-                as="button"
-                fontSize="xs"
-                color="orange.500"
-                fontWeight="bold"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  toggleExpanded(currentPath);
-                }}
-                px={2}
-                py={1}
-                borderRadius="md"
-                _hover={{ bg: "orange.100" }}
-              >
-                {isExpanded ? "▼" : "▶"} {property.entity_type}
-              </Box>
-            )}
-          </Box>
-          {isExpanded &&
-            nestedEntity &&
-            nestedEntity.properties.map((nestedProp) => (
-              <PropertyOption
-                key={nestedProp.name}
-                property={nestedProp}
-                basePath={currentPath}
-                depth={depth + 1}
-              />
-            ))}
-        </Box>
-      );
-    };
-
-    return (
-      <Box
-        className="context-menu entity-path-menu"
-        position="fixed"
-        left={x}
-        top={menuTop}
-        bottom={menuBottom}
-        zIndex={1000}
-        maxH={MENU_MAX_HEIGHT}
-        overflowY="auto"
-      >
-        <Flex
-          className="menu-header"
-          justify="space-between"
-          align="center"
-          p={4}
-        >
-          <Text fontSize="lg" fontWeight="bold">
-            Select Entity Path
-          </Text>
-          <CloseButton onClick={onClose} />
-        </Flex>
-        <VStack gap={1} p={2} align="stretch">
-          {placeholderOptions.map((placeholder) => (
-            <Box
-              key={placeholder}
-              className="placeholder-option"
-              p={1}
-              cursor="pointer"
-              _hover={{ bg: "gray.100" }}
-              onClick={() => onSelect(`:${placeholder}`)}
-              fontWeight={placeholder === "..." ? "bold" : "normal"}
-            >
-              {placeholder}
-            </Box>
-          ))}
-        </VStack>
-        <Accordion.Root
-          collapsible
-          value={expandedIndex !== null ? [expandedIndex.toString()] : []}
-          onValueChange={handleValueChange}
-          className="accordion"
-        >
-          {entities.map((entity, index) => (
-            <Accordion.Item
-              key={entity.name}
-              value={index.toString()}
-              className="accordion-item"
-            >
-              <Accordion.ItemTrigger className="accordion-title">
-                <Box flex="1" textAlign="left">
-                  {entity.name}
-                </Box>
-                <Accordion.ItemIndicator />
-              </Accordion.ItemTrigger>
-              <Accordion.ItemContent className="accordion-content" p={2}>
-                <Accordion.ItemBody>
-                  {entity.properties.map((property) => (
-                    <PropertyOption
-                      key={property.name}
-                      property={property}
-                      basePath={entity.name}
-                      depth={0}
-                    />
-                  ))}
-                </Accordion.ItemBody>
-              </Accordion.ItemContent>
-            </Accordion.Item>
-          ))}
-        </Accordion.Root>
-      </Box>
-    );
-  };
-
-  // コンテナ作成コンテキストメニューコンポーネント
-  const ContainerContextMenu: React.FC<{
-    onSelect: (
-      type: "container" | "text" | "number" | "button" | "input"
-    ) => void;
-    onClose: () => void;
-    x: number;
-    y: number;
-  }> = ({ onSelect, onClose, x, y }) => {
-    const MENU_MAX_HEIGHT = 200;
-    const isNearBottom = y + MENU_MAX_HEIGHT > window.innerHeight;
-    const menuTop = isNearBottom ? undefined : y;
-    const menuBottom = isNearBottom ? 0 : undefined;
-
-    return (
-      <Box
-        className="context-menu container-context-menu"
-        position="fixed"
-        left={x}
-        top={menuTop}
-        bottom={menuBottom}
-        zIndex={1000}
-      >
-        <Flex
-          className="menu-header"
-          justify="space-between"
-          align="center"
-          p={4}
-        >
-          <Text fontSize="lg" fontWeight="bold">
-            Add Component
-          </Text>
-          <CloseButton onClick={onClose} />
-        </Flex>
-        <VStack className="menu-options" gap={1} p={2}>
-          <Flex
-            className="menu-option"
-            onClick={() => onSelect("container")}
-            align="center"
-            gap={2}
-            p={2}
-            cursor="pointer"
-            width="100%"
-            _hover={{ bg: "gray.100" }}
-          >
-            <Box className="option-icon" fontSize="xl">
-              □
-            </Box>
-            <Box className="option-label">Container</Box>
-          </Flex>
-          <Flex
-            className="menu-option"
-            onClick={() => onSelect("text")}
-            align="center"
-            gap={2}
-            p={2}
-            cursor="pointer"
-            width="100%"
-            _hover={{ bg: "gray.100" }}
-          >
-            <Box className="option-icon" fontSize="xl" color="blue.500">
-              T
-            </Box>
-            <Box className="option-label">Text</Box>
-          </Flex>
-          <Flex
-            className="menu-option"
-            onClick={() => onSelect("number")}
-            align="center"
-            gap={2}
-            p={2}
-            cursor="pointer"
-            width="100%"
-            _hover={{ bg: "gray.100" }}
-          >
-            <Box className="option-icon" fontSize="xl" color="green.500">
-              #
-            </Box>
-            <Box className="option-label">Number</Box>
-          </Flex>
-          <Flex
-            className="menu-option"
-            onClick={() => onSelect("button")}
-            align="center"
-            gap={2}
-            p={2}
-            cursor="pointer"
-            width="100%"
-            _hover={{ bg: "gray.100" }}
-          >
-            <Box className="option-icon" fontSize="xl" color="red.500">
-              B
-            </Box>
-            <Box className="option-label">Button</Box>
-          </Flex>
-          <Flex
-            className="menu-option"
-            onClick={() => onSelect("input")}
-            align="center"
-            gap={2}
-            p={2}
-            cursor="pointer"
-            width="100%"
-            _hover={{ bg: "gray.100" }}
-          >
-            <Box className="option-icon" fontSize="xl" color="purple.500">
-              I
-            </Box>
-            <Box className="option-label">Input</Box>
-          </Flex>
-        </VStack>
-      </Box>
-    );
-  };
-
   const placeholderPathTypes: Record<string, "string" | "number"> = {
     ":...": "string",
     ":12...": "number",
@@ -1342,8 +1008,6 @@ function App() {
       });
     }
   };
-
-  // プレビューモード表示コンポーネント
 
   return (
     <ChakraProvider value={defaultSystem}>
@@ -1548,403 +1212,29 @@ function App() {
                         </Tabs.List>
                       </Tabs.Root>
                       {panelType === "entities" ? (
-                        <Box className="entities-panel">
-                          <HStack mb={2}>
-                            <Button
-                              size="sm"
-                              colorScheme="blue"
-                              onClick={addEntity}
-                            >
-                              + Add Entity
-                            </Button>
-                          </HStack>
-                          <VStack
-                            className="entities-list"
-                            gap={2}
-                            align="stretch"
-                          >
-                            {entities.map((entity, entityIndex) => (
-                              <Box
-                                key={entity.name + entityIndex}
-                                className="entity"
-                                borderWidth="1px"
-                                borderRadius="md"
-                                p={2}
-                              >
-                                <HStack justify="space-between" mb={1}>
-                                  {editingEntityIndex === entityIndex ? (
-                                    <Input
-                                      size="sm"
-                                      defaultValue={entity.name}
-                                      onBlur={(e) => {
-                                        if (e.target.value.trim()) {
-                                          updateEntityName(
-                                            entityIndex,
-                                            sanitizeName(e.target.value)
-                                          );
-                                        }
-                                        setEditingEntityIndex(null);
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          if (e.currentTarget.value.trim()) {
-                                            updateEntityName(
-                                              entityIndex,
-                                              sanitizeName(
-                                                e.currentTarget.value
-                                              )
-                                            );
-                                          }
-                                          setEditingEntityIndex(null);
-                                        } else if (e.key === "Escape") {
-                                          setEditingEntityIndex(null);
-                                        }
-                                      }}
-                                      autoFocus
-                                    />
-                                  ) : (
-                                    <Box
-                                      className="entity-name"
-                                      fontWeight="bold"
-                                      cursor="pointer"
-                                      onClick={() => {
-                                        setEditingEntityIndex(entityIndex);
-                                      }}
-                                    >
-                                      {entity.name}
-                                    </Box>
-                                  )}
-                                  <HStack gap={1}>
-                                    <Button
-                                      size="xs"
-                                      bg="green.500"
-                                      color="white"
-                                      _hover={{ bg: "green.600" }}
-                                      onClick={() => addProperty(entityIndex)}
-                                      title="Add property"
-                                    >
-                                      +
-                                    </Button>
-                                    <Button
-                                      size="xs"
-                                      bg="red.500"
-                                      color="white"
-                                      _hover={{ bg: "red.600" }}
-                                      className="delete-entity-btn"
-                                      onClick={() => {
-                                        if (
-                                          window.confirm(
-                                            `Delete entity "${entity.name}"?`
-                                          )
-                                        ) {
-                                          deleteEntity(entityIndex);
-                                        }
-                                      }}
-                                      title="Delete entity"
-                                    >
-                                      ×
-                                    </Button>
-                                  </HStack>
-                                </HStack>
-                                <VStack
-                                  className="entity-properties"
-                                  gap={1}
-                                  align="stretch"
-                                >
-                                  {entity.properties.map((prop, propIndex) => (
-                                    <HStack
-                                      key={prop.name + propIndex}
-                                      className="property-row"
-                                      gap={1}
-                                    >
-                                      {editingPropertyIndex?.entityIndex ===
-                                        entityIndex &&
-                                      editingPropertyIndex?.propertyIndex ===
-                                        propIndex ? (
-                                        <Input
-                                          size="xs"
-                                          defaultValue={prop.name}
-                                          onBlur={(e) => {
-                                            if (e.target.value.trim()) {
-                                              updatePropertyName(
-                                                entityIndex,
-                                                propIndex,
-                                                sanitizeName(e.target.value)
-                                              );
-                                            }
-                                            setEditingPropertyIndex(null);
-                                          }}
-                                          onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                              if (
-                                                e.currentTarget.value.trim()
-                                              ) {
-                                                updatePropertyName(
-                                                  entityIndex,
-                                                  propIndex,
-                                                  sanitizeName(
-                                                    e.currentTarget.value
-                                                  )
-                                                );
-                                              }
-                                              setEditingPropertyIndex(null);
-                                            } else if (e.key === "Escape") {
-                                              setEditingPropertyIndex(null);
-                                            }
-                                          }}
-                                          autoFocus
-                                        />
-                                      ) : (
-                                        <Box
-                                          className="entity-property"
-                                          fontSize="sm"
-                                          cursor="pointer"
-                                          width="10em"
-                                          overflow="hidden"
-                                          textOverflow="ellipsis"
-                                          whiteSpace="nowrap"
-                                          onClick={() => {
-                                            setEditingPropertyIndex({
-                                              entityIndex,
-                                              propertyIndex: propIndex,
-                                            });
-                                          }}
-                                        >
-                                          {prop.name}
-                                        </Box>
-                                      )}
-                                      <Box
-                                        as="span"
-                                        className={`type-select type-${prop.type}`}
-                                        color={propertyTypeColors[prop.type]}
-                                      >
-                                        <Select.Root
-                                          size="xs"
-                                          width="70px"
-                                          collection={propertyTypeCollection}
-                                          value={[prop.type]}
-                                          onValueChange={(details) => {
-                                            const newType = details.value[0] as
-                                              | "string"
-                                              | "number"
-                                              | "entity"
-                                              | "function";
-                                            const defaultEntityType =
-                                              entities.find(
-                                                (en) => en.name !== entity.name
-                                              )?.name;
-                                            updatePropertyType(
-                                              entityIndex,
-                                              propIndex,
-                                              newType,
-                                              newType === "entity"
-                                                ? defaultEntityType
-                                                : undefined
-                                            );
-                                          }}
-                                        >
-                                          <Select.Trigger className="property-type-badge">
-                                            <Select.ValueText />
-                                          </Select.Trigger>
-                                          <Select.Positioner>
-                                            <Select.Content>
-                                              {propertyTypeCollection.items.map(
-                                                (item) => (
-                                                  <Select.Item
-                                                    key={item.value}
-                                                    item={item}
-                                                  >
-                                                    <Select.ItemText>
-                                                      {item.label}
-                                                    </Select.ItemText>
-                                                  </Select.Item>
-                                                )
-                                              )}
-                                            </Select.Content>
-                                          </Select.Positioner>
-                                        </Select.Root>
-                                      </Box>
-                                      {prop.type === "entity" ? (
-                                        <NativeSelect.Root
-                                          size="xs"
-                                          width="80px"
-                                          backgroundColor="gray.600"
-                                          color="white"
-                                          className="entity-type-select"
-                                        >
-                                          <NativeSelect.Field
-                                            value={prop.entity_type || ""}
-                                            onChange={(e) => {
-                                              updatePropertyType(
-                                                entityIndex,
-                                                propIndex,
-                                                "entity",
-                                                e.target.value
-                                              );
-                                            }}
-                                          >
-                                            {entities.map((en) => (
-                                              <option
-                                                key={en.name}
-                                                value={en.name}
-                                              >
-                                                {en.name}
-                                              </option>
-                                            ))}
-                                          </NativeSelect.Field>
-                                          <NativeSelect.Indicator />
-                                        </NativeSelect.Root>
-                                      ) : (
-                                        <Box width="80px" />
-                                      )}
-                                      <Button
-                                        size="2xs"
-                                        bg="red.500"
-                                        color="white"
-                                        _hover={{ bg: "red.600" }}
-                                        ml={1}
-                                        className="delete-property-btn"
-                                        onClick={() => {
-                                          if (
-                                            window.confirm(
-                                              `Delete property "${prop.name}"?`
-                                            )
-                                          ) {
-                                            deleteProperty(
-                                              entityIndex,
-                                              propIndex
-                                            );
-                                          }
-                                        }}
-                                        title="Delete property"
-                                      >
-                                        ×
-                                      </Button>
-                                    </HStack>
-                                  ))}
-                                </VStack>
-                              </Box>
-                            ))}
-                          </VStack>
-                        </Box>
+                        <EntitiesPanel
+                          entities={entities}
+                          editingEntityIndex={editingEntityIndex}
+                          editingPropertyIndex={editingPropertyIndex}
+                          setEditingEntityIndex={setEditingEntityIndex}
+                          setEditingPropertyIndex={setEditingPropertyIndex}
+                          addEntity={addEntity}
+                          deleteEntity={deleteEntity}
+                          updateEntityName={updateEntityName}
+                          addProperty={addProperty}
+                          deleteProperty={deleteProperty}
+                          updatePropertyName={updatePropertyName}
+                          updatePropertyType={updatePropertyType}
+                        />
                       ) : (
-                        <Box className="screens-panel">
-                          <HStack className="add-screen-form" gap={2} mb={4}>
-                            <Input
-                              type="text"
-                              placeholder="New screen name"
-                              onKeyDown={(e) => {
-                                if (
-                                  e.key === "Enter" &&
-                                  e.currentTarget.value.trim()
-                                ) {
-                                  addScreen(e.currentTarget.value.trim());
-                                  e.currentTarget.value = "";
-                                }
-                              }}
-                              size="sm"
-                            />
-                            <Button
-                              onClick={() => {
-                                const input = document.querySelector(
-                                  ".add-screen-form input"
-                                ) as HTMLInputElement;
-                                if (input && input.value.trim()) {
-                                  addScreen(input.value.trim());
-                                  input.value = "";
-                                }
-                              }}
-                              size="sm"
-                              colorScheme="blue"
-                            >
-                              <Box as="span" mr={1}>
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <line x1="12" y1="5" x2="12" y2="19" />
-                                  <line x1="5" y1="12" x2="19" y2="12" />
-                                </svg>
-                              </Box>
-                              Add
-                            </Button>
-                          </HStack>
-                          <VStack
-                            className="screens-list"
-                            gap={2}
-                            align="stretch"
-                          >
-                            {screens.map((screen) => (
-                              <Box
-                                key={screen.id}
-                                className={`screen-item ${screen.id === currentScreenId ? "active" : ""}`}
-                                borderWidth="1px"
-                                borderRadius="md"
-                                p={2}
-                                bg={
-                                  screen.id === currentScreenId
-                                    ? "blue.50"
-                                    : "transparent"
-                                }
-                                borderColor={
-                                  screen.id === currentScreenId
-                                    ? "blue.200"
-                                    : "gray.200"
-                                }
-                                cursor="pointer"
-                                onClick={() => setCurrentScreenId(screen.id)}
-                              >
-                                <HStack justify="space-between">
-                                  <Box
-                                    className="screen-name"
-                                    fontWeight="medium"
-                                    color={
-                                      screen.id === currentScreenId
-                                        ? "gray.800"
-                                        : "inherit"
-                                    }
-                                  >
-                                    {screen.name}
-                                  </Box>
-                                  <HStack className="screen-actions" gap={1}>
-                                    <Button
-                                      className="copy-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        copyScreen(screen.id);
-                                      }}
-                                      title="Copy screen"
-                                      size="xs"
-                                      variant="ghost"
-                                    >
-                                      📋
-                                    </Button>
-                                    <Button
-                                      className="delete-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteScreen(screen.id);
-                                      }}
-                                      title="Delete screen"
-                                      disabled={screens.length <= 1}
-                                      size="xs"
-                                      variant="ghost"
-                                      colorScheme="red"
-                                    >
-                                      🗑️
-                                    </Button>
-                                  </HStack>
-                                </HStack>
-                              </Box>
-                            ))}
-                          </VStack>
-                        </Box>
+                        <ScreensPanel
+                          screens={screens}
+                          currentScreenId={currentScreenId}
+                          setCurrentScreenId={setCurrentScreenId}
+                          addScreen={addScreen}
+                          copyScreen={copyScreen}
+                          deleteScreen={deleteScreen}
+                        />
                       )}
                     </Box>
                   </Box>

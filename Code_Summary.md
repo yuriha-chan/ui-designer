@@ -31,6 +31,7 @@
 │   ├── DragManager.tsx       # Drag context provider with throttling
 │   ├── dnd.ts                # Drag-and-drop type definitions
 │   ├── dragStore.ts          # Drag state management store
+│   ├── components/           # UI panel components (EntitiesPanel, ScreensPanel, menus)
 │   └── test/
 │       ├── setup.ts          # Vitest testing setup
 │       ├── unit/
@@ -66,17 +67,18 @@
 6. **vitest.config.ts** - Vitest test configuration with jsdom environment
 7. **.prettierrc** - Prettier formatting configuration (2-space indent)
 8. **src/types.ts** - Core type definitions (Entity, UIComponent, TopologicalClass, DesignMetrics)
-9. **src/App.tsx** - Main application component with UI logic and drag-and-drop handlers
+9. **src/App.tsx** - Main application orchestrator (imports panel components)
 10. **src/ComponentNode.tsx** - Recursive component rendering with drag-and-drop logic
 11. **src/componentTree.ts** - Core algorithms: S-expression generation, sorting, tree operations
 12. **src/dnd.ts** - Drag-and-drop type definitions and constants
 13. **src/dragStore.ts** - Simple state management for drag operations using useSyncExternalStore
 14. **src/DragManager.tsx** - Drag context provider with throttled updates
 15. **src/storage.ts** - localStorage auto-save/load utilities with validation
-16. **src/test/unit/componentTree.test.ts** - Unit tests for core algorithms
-17. **src/test/unit/storage.test.ts** - Unit tests for storage utilities
-18. \***\*fixtures**/\*\* - Test data for components and entities
-19. \***\*mocks**/\*\* - Mock implementations for testing (react-dnd, uuid, usehooks, storage)
+16. **src/components/** - UI panel components (EntitiesPanel, ScreensPanel, EntityPathMenu, ContainerContextMenu)
+17. **src/test/unit/componentTree.test.ts** - Unit tests for core algorithms
+18. **src/test/unit/storage.test.ts** - Unit tests for storage utilities
+19. \***\*fixtures**/\*\* - Test data for components and entities
+20. \***\*mocks**/\*\* - Mock implementations for testing (react-dnd, uuid, usehooks, storage)
 
 ## Characteristics Report
 
@@ -195,10 +197,11 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 
 #### 4. Component Architecture
 
-- **App component**: Main container managing component tree state, entities, and drag handlers
-- **ComponentNode**: Recursive component rendering with drag-and-drop integration, context menus
+- **App component**: Main orchestrator delegating to panel components
+- **ComponentNode**: Recursive component rendering with drag-and-drop integration
+- **Panel components** (src/components/): EntitiesPanel, ScreensPanel, EntityPathMenu, ContainerContextMenu
 - **DragManager**: Context provider for drag target management with throttling
-- **Separation of concerns**: Business logic in componentTree.ts, UI in components, state management in stores
+- **Separation of concerns**: Business logic in componentTree.ts, UI panels in src/components/, state management in stores
 
 #### 5. Visual Representation System
 
@@ -211,11 +214,10 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 
 #### App Component
 
-- Main application container with full UI logic
-- Manages component tree state and entities
-- Implements drag-and-drop handlers and context menu logic
-- Renders component hierarchy recursively via ComponentNode
-- Handles component operations (move, copy, remove, update)
+- Main application orchestrator
+- Manages component tree state, entities, screens, and history
+- Delegates UI panels to extracted components
+- Handles global operations (undo/redo, auto-save, keyboard shortcuts)
 
 #### ComponentNode Component
 
@@ -336,4 +338,4 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 
 ## Summary
 
-The Topological UI Designer is a specialized educational tool built with modern React/TypeScript. It enforces a constrained design environment to teach UI architecture fundamentals through topological relationships rather than visual styling. The codebase has grown to include comprehensive testing infrastructure with Vitest, React Testing Library, fixtures, and mocks. The architecture centers around hierarchical component trees, deterministic sorting via S-expressions, and a custom drag-and-drop system for manipulating UI structure. The project includes automated formatting (Prettier), testing (Vitest), and Claude Code automation hooks. Recent development has focused on test implementation with a well-organized test structure including unit tests, component tests, fixtures, and mocks.
+The Topological UI Designer is a specialized educational tool built with modern React/TypeScript. It enforces a constrained design environment to teach UI architecture fundamentals through topological relationships rather than visual styling. The architecture centers around hierarchical component trees, deterministic sorting via S-expressions, and a custom drag-and-drop system. Panel UI logic is extracted into modular components in src/components/ for maintainability. The project includes automated formatting (Prettier), testing (Vitest), and Claude Code automation hooks.
