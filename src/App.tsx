@@ -2,7 +2,13 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { v4 as uuidv4 } from "uuid";
-import { UIComponent, Entity, Screen, EntityProperty } from "./types";
+import {
+  UIComponent,
+  Entity,
+  Screen,
+  EntityProperty,
+  PropertyType,
+} from "./types";
 import { DragManager } from "./DragManager";
 import { exportDesign, exportStoryboard, importDesign } from "./importExport";
 import { saveToStorage, loadFromStorage } from "./storage";
@@ -127,6 +133,13 @@ function App() {
       { label: "function", value: "function" },
     ],
   });
+
+  const propertyTypeColors: Record<PropertyType, string> = {
+    string: "blue.500",
+    number: "green.500",
+    entity: "orange.500",
+    function: "purple.500",
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   type ContextMenuType = "entity-path" | "container-create";
   const [contextMenu, setContextMenu] = useState<{
@@ -1195,15 +1208,44 @@ function App() {
     );
   };
 
+  const getPropertyTypeFromPath = (
+    path: string
+  ): "string" | "number" | null => {
+    const parts = path.split(">");
+    const entityName = parts[0];
+    const propertyName = parts[parts.length - 1];
+    const entity = entities.find((e) => e.name === entityName);
+    if (!entity) return null;
+    const property = entity.properties.find((p) => p.name === propertyName);
+    if (!property) return null;
+    if (property.type === "string" || property.type === "number") {
+      return property.type;
+    }
+    return null;
+  };
+
   const handleEntityPathSelect = (entityPath: string) => {
     if (!contextMenu) return;
     const { componentId, pendingComponentType } = contextMenu;
     if (pendingComponentType) {
-      // エンティティパス選択待ちのコンポーネントを作成
-      addComponentToContainer(componentId, pendingComponentType, entityPath);
+      // Auto-determine component type from entity path
+      const propertyType = getPropertyTypeFromPath(entityPath);
+      const componentType = propertyType === "number" ? "number" : "text";
+      addComponentToContainer(componentId, componentType, entityPath);
     } else {
-      // 既存コンポーネントのエンティティパスを更新
+      // Auto-update component type based on entity path
+      const propertyType = getPropertyTypeFromPath(entityPath);
+      const componentType = propertyType === "number" ? "number" : "text";
       updateEntityPath(componentId, entityPath);
+      // Also update component type
+      setScreens((prev) =>
+        prev.map((screen) => ({
+          ...screen,
+          components: screen.components.map((comp) =>
+            comp.id === componentId ? { ...comp, type: componentType } : comp
+          ),
+        }))
+      );
     }
     setContextMenu(null);
   };
@@ -1598,17 +1640,7 @@ function App() {
                                       <Box
                                         as="span"
                                         className={`type-select type-${prop.type}`}
-                                        color={
-                                          prop.type === "string"
-                                            ? "blue.500"
-                                            : prop.type === "number"
-                                              ? "green.500"
-                                              : prop.type === "entity"
-                                                ? "orange.500"
-                                                : prop.type === "function"
-                                                  ? "purple.500"
-                                                  : "inherit"
-                                        }
+                                        color={propertyTypeColors[prop.type]}
                                       >
                                         <Select.Root
                                           size="xs"
