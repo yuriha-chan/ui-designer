@@ -278,6 +278,12 @@ function App() {
       setScreens(saved.screens);
       setEntities(saved.entities);
       setCurrentScreenId(saved.currentScreenId);
+      // Initialize history with loaded state
+      const loadedHistory = [saved.screens];
+      setHistory(loadedHistory);
+      setHistoryIndex(0);
+      historyRef.current = loadedHistory;
+      historyIndexRef.current = 0;
     }
   }, []);
 
