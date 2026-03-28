@@ -941,9 +941,10 @@ function App() {
       const isExpanded = expandedPaths.has(currentPath);
 
       const handleClick = () => {
-        onSelect(currentPath);
-        if (isEntityType && nestedEntity && !expandedPaths.has(currentPath)) {
+        if (isEntityType && nestedEntity) {
           toggleExpanded(currentPath);
+        } else {
+          onSelect(currentPath);
         }
       };
 
