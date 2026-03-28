@@ -1043,25 +1043,29 @@ function App() {
           </Text>
           <CloseButton onClick={onClose} />
         </Flex>
+        <VStack gap={1} p={2} align="stretch">
+          {["OK", "Cancel", "Select", "Delete", "New", "..."].map(
+            (placeholder) => (
+              <Box
+                key={placeholder}
+                className="property-option"
+                p={1}
+                cursor="pointer"
+                _hover={{ bg: "gray.100" }}
+                onClick={() => onSelect(placeholder)}
+                fontWeight={placeholder === "..." ? "bold" : "normal"}
+              >
+                {placeholder}
+              </Box>
+            )
+          )}
+        </VStack>
         <Accordion.Root
           collapsible
           value={expandedIndex !== null ? [expandedIndex.toString()] : []}
           onValueChange={handleValueChange}
           className="accordion"
         >
-          <Accordion.Item value="clear" className="accordion-item">
-            <Accordion.ItemTrigger
-              className="accordion-title"
-              onClick={() => onSelect("")}
-            >
-              <Box flex="1" textAlign="left">
-                ...
-              </Box>
-            </Accordion.ItemTrigger>
-            <Accordion.ItemContent className="accordion-content" p={2}>
-              <Accordion.ItemBody>Clear entity path</Accordion.ItemBody>
-            </Accordion.ItemContent>
-          </Accordion.Item>
           {entities.map((entity, index) => (
             <Accordion.Item
               key={entity.name}
