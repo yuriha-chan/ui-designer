@@ -894,10 +894,9 @@ function App() {
     const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
 
     const MENU_MAX_HEIGHT = 400;
-    const MENU_THRESHOLD = 200;
-    const isNearBottom = y > MENU_THRESHOLD;
+    const isNearBottom = y + MENU_MAX_HEIGHT > window.innerHeight;
     const menuTop = isNearBottom ? undefined : y;
-    const menuBottom = isNearBottom ? window.innerHeight - y : undefined;
+    const menuBottom = isNearBottom ? 0 : undefined;
 
     const findEntity = (name: string) => entities.find((e) => e.name === name);
 
@@ -1071,10 +1070,10 @@ function App() {
     x: number;
     y: number;
   }> = ({ onSelect, onClose, x, y }) => {
-    const MENU_THRESHOLD = 200;
-    const isNearBottom = y > MENU_THRESHOLD;
+    const MENU_MAX_HEIGHT = 200;
+    const isNearBottom = y + MENU_MAX_HEIGHT > window.innerHeight;
     const menuTop = isNearBottom ? undefined : y;
-    const menuBottom = isNearBottom ? window.innerHeight - y : undefined;
+    const menuBottom = isNearBottom ? 0 : undefined;
 
     return (
       <Box
