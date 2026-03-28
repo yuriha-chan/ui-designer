@@ -959,8 +959,7 @@ function App() {
             alignItems="center"
             width="100%"
           >
-            <Box flex="1" onClick={handleClick} textAlign="left">
-              {depth > 0 ? "  ".repeat(depth) + "▸ " : ""}
+            <Box flex="1" onClick={handleClick} textAlign="left" pl={depth * 4}>
               {property.name}
             </Box>
             {isEntityType && nestedEntity && (
