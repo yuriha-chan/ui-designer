@@ -131,7 +131,7 @@ function App() {
         const newScreen = newScreens.find((s) => s.id === currentScreenId);
         const newComponents = newScreen?.components || [];
 
-        // Skip history update if components are semantically identical (normalized S-expression)
+        // Skip history update if current screen's components are semantically identical
         const prevSExpr = sortComponentsBySExpression(prevComponents)
           .map(generateSExpression)
           .join(" ");
