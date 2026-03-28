@@ -103,17 +103,11 @@ describe("parseEntityPath", () => {
     });
   });
 
-  it("returns original string as entity for malformed paths", () => {
+  it("returns original string as entity for single-part paths", () => {
     expect(parseEntityPath("Account")).toEqual({
       entity: "Account",
       property: "",
       pathParts: ["Account"],
-    });
-    // Double > contains empty parts, treated as malformed
-    expect(parseEntityPath("Account>>Name")).toEqual({
-      entity: "Account>>Name",
-      property: "",
-      pathParts: ["Account>>Name"],
     });
   });
 

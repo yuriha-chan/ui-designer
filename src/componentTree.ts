@@ -55,20 +55,15 @@ export const parseEntityPath = (
   if (!entityPath) {
     return { entity: "...", property: "", pathParts: [] };
   }
-  const trimmed = entityPath.trim();
-  if (trimmed === "" || trimmed === "...") {
+  if (entityPath === "" || entityPath === "...") {
     return { entity: "...", property: "", pathParts: [] };
   }
   // Handle prefixed placeholders (e.g., :OK, :Cancel, :Select, :Delete, :New, :...)
-  if (trimmed.startsWith(":")) {
-    const placeholder = trimmed.slice(1);
+  if (entityPath.startsWith(":")) {
+    const placeholder = entityPath.slice(1);
     return { entity: placeholder, property: "", pathParts: [] };
   }
-  const parts = trimmed.split(">").map((p) => p.trim());
-  // Check for empty parts (malformed)
-  if (parts.some((p) => p === "")) {
-    return { entity: trimmed, property: "", pathParts: [trimmed] };
-  }
+  const parts = entityPath.split(">");
   if (parts.length === 2) {
     return { entity: parts[0], property: parts[1], pathParts: parts };
   }
@@ -79,8 +74,7 @@ export const parseEntityPath = (
       pathParts: parts,
     };
   }
-  // フォーマットが不正な場合はそのまま表示
-  return { entity: trimmed, property: "", pathParts: [trimmed] };
+  return { entity: entityPath, property: "", pathParts: [entityPath] };
 };
 
 // コンポーネントが別のコンポーネントの子孫かどうかを判定

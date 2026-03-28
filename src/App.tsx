@@ -348,6 +348,11 @@ function App() {
     [currentScreenId, renameScreen]
   );
 
+  // Sanitize entity/property names: trim spaces and replace invalid characters
+  const sanitizeName = (name: string): string => {
+    return name.trim().replace(/[:>]/g, "-");
+  };
+
   // Entity CRUD functions
   const addEntity = useCallback(() => {
     const newEntity: Entity = {
@@ -1530,7 +1535,7 @@ function App() {
                                         if (e.target.value.trim()) {
                                           updateEntityName(
                                             entityIndex,
-                                            e.target.value.trim()
+                                            sanitizeName(e.target.value)
                                           );
                                         }
                                         setEditingEntityIndex(null);
@@ -1540,7 +1545,9 @@ function App() {
                                           if (e.currentTarget.value.trim()) {
                                             updateEntityName(
                                               entityIndex,
-                                              e.currentTarget.value.trim()
+                                              sanitizeName(
+                                                e.currentTarget.value
+                                              )
                                             );
                                           }
                                           setEditingEntityIndex(null);
@@ -1617,7 +1624,7 @@ function App() {
                                               updatePropertyName(
                                                 entityIndex,
                                                 propIndex,
-                                                e.target.value.trim()
+                                                sanitizeName(e.target.value)
                                               );
                                             }
                                             setEditingPropertyIndex(null);
@@ -1630,7 +1637,9 @@ function App() {
                                                 updatePropertyName(
                                                   entityIndex,
                                                   propIndex,
-                                                  e.currentTarget.value.trim()
+                                                  sanitizeName(
+                                                    e.currentTarget.value
+                                                  )
                                                 );
                                               }
                                               setEditingPropertyIndex(null);
