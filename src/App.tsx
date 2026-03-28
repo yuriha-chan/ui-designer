@@ -114,7 +114,7 @@ function App() {
   );
   const [previewMode, setPreviewMode] = useState(false);
   const [isEditingScreenName, setIsEditingScreenName] = useState(false);
-  const [editingScreenName, setEditingScreenName] = useState("");
+  const [, setEditingScreenName] = useState("");
   const [exportMode, setExportMode] = useState<"screen" | "storyboard">(
     "screen"
   );
@@ -316,12 +316,24 @@ function App() {
   }, [getCurrentScreen]);
 
   const handleScreenNameBlur = useCallback(() => {
-    if (editingScreenName.trim()) {
-      renameScreen(currentScreenId, editingScreenName.trim());
-    }
     setIsEditingScreenName(false);
     setEditingScreenName("");
-  }, [editingScreenName, currentScreenId, renameScreen]);
+  }, []);
+
+  const handleScreenNameKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      const value = e.currentTarget.value;
+      if (e.key === "Enter" && value.trim()) {
+        renameScreen(currentScreenId, value.trim());
+        setIsEditingScreenName(false);
+        setEditingScreenName("");
+      } else if (e.key === "Escape") {
+        setIsEditingScreenName(false);
+        setEditingScreenName("");
+      }
+    },
+    [currentScreenId, renameScreen]
+  );
 
   // Entity CRUD functions
   const addEntity = useCallback(() => {
@@ -1239,12 +1251,9 @@ function App() {
                   {isEditingScreenName ? (
                     <Input
                       type="text"
-                      value={editingScreenName}
-                      onChange={(e) => setEditingScreenName(e.target.value)}
+                      defaultValue={getCurrentScreen()?.name || ""}
                       onBlur={handleScreenNameBlur}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && handleScreenNameBlur()
-                      }
+                      onKeyDown={handleScreenNameKeyDown}
                       autoFocus
                       variant="outline"
                       size="sm"
