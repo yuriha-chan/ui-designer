@@ -10,6 +10,10 @@ export interface AutoSaveData {
 
 export function saveToStorage(data: AutoSaveData): void {
   try {
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing && existing === JSON.stringify(data)) {
+      return;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
     console.error("Failed to save to localStorage:", error);

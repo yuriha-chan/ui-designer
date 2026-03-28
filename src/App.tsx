@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { v4 as uuidv4 } from "uuid";
-import { useDebounce } from "@uidotdev/usehooks";
 import { UIComponent, Entity, Screen } from "./types";
 import { DragManager } from "./DragManager";
 import { exportDesign, exportStoryboard, importDesign } from "./importExport";
@@ -265,13 +264,18 @@ function App() {
   }, []);
 
   // Auto-save: Save to localStorage on change (debounced 1 second)
-  const debouncedSave = useDebounce(
-    { screens, entities, currentScreenId },
-    1000
-  );
+  const lastSavedRef = useRef<string | null>(null);
   useEffect(() => {
-    saveToStorage(debouncedSave);
-  }, [debouncedSave]);
+    const currentData = JSON.stringify({ screens, entities, currentScreenId });
+    if (lastSavedRef.current === currentData) {
+      return;
+    }
+    lastSavedRef.current = currentData;
+    const timer = setTimeout(() => {
+      saveToStorage({ screens, entities, currentScreenId });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [screens, entities, currentScreenId]);
 
   // メニュー外クリックやエスケープキーでメニューを閉じる
   useEffect(() => {
