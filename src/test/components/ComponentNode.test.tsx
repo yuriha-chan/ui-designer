@@ -141,6 +141,8 @@ describe("ComponentNode", () => {
       componentId: leafComponent.id,
       x: expect.any(Number),
       y: expect.any(Number),
+      pendingComponentType: leafComponent.type,
+      isUpdate: true,
     });
   });
 

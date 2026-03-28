@@ -8,6 +8,7 @@ import {
   Screen,
   EntityProperty,
   PropertyType,
+  ComponentType,
 } from "./types";
 import { DragManager } from "./DragManager";
 import { exportDesign, exportStoryboard, importDesign } from "./importExport";
@@ -148,6 +149,7 @@ function App() {
     x: number;
     y: number;
     pendingComponentType?: "text" | "number" | "button" | "input"; // エンティティパス選択待ちのコンポーネントタイプ
+    isUpdate?: boolean; // true when editing existing component
   } | null>(null);
 
   // Entity editing state
@@ -790,11 +792,13 @@ function App() {
   );
 
   const updateEntityPath = useCallback(
-    (id: string, entityPath: string) => {
+    (id: string, entityPath: string, type?: ComponentType) => {
       const updateComponents = (comps: UIComponent[]): UIComponent[] => {
         return comps.map((comp) => {
           if (comp.id === id) {
-            return { ...comp, entityPath };
+            return type !== undefined
+              ? { ...comp, entityPath, type }
+              : { ...comp, entityPath };
           }
           return {
             ...comp,
@@ -967,7 +971,7 @@ function App() {
       componentType === "button" || componentType === undefined
         ? ["OK", "Cancel", "Select", "Delete", "New", "..."]
         : componentType === "number"
-          ? ["12...", "..."]
+          ? ["12..."]
           : ["..."];
 
     const handleValueChange = (details: { value: string[] }) => {
@@ -1254,34 +1258,56 @@ function App() {
     );
   };
 
-  const getPropertyTypeFromPath = (
-    path: string
-  ): "string" | "number" | null => {
+  const placeholderPathTypes: Record<string, "string" | "number"> = {
+    ":...": "string",
+    ":12...": "number",
+  };
+
+  const getPropertyTypeFromPath = (path: string): PropertyType | null => {
+    if (path.startsWith(":")) {
+      return placeholderPathTypes[path] ?? null;
+    }
     const parts = path.split(">");
-    const entityName = parts[0];
-    const propertyName = parts[parts.length - 1];
-    const entity = entities.find((e) => e.name === entityName);
-    if (!entity) return null;
-    const property = entity.properties.find((p) => p.name === propertyName);
-    if (!property) return null;
-    if (property.type === "string" || property.type === "number") {
-      return property.type;
+    let currentEntityName = parts[0];
+    for (let i = 1; i < parts.length; i++) {
+      const propertyName = parts[i];
+      const currentEntity = entities.find((e) => e.name === currentEntityName);
+      if (!currentEntity) return null;
+      const property = currentEntity.properties.find(
+        (p) => p.name === propertyName
+      );
+      if (!property) return null;
+      if (property.type === "entity" && property.entity_type) {
+        currentEntityName = property.entity_type;
+      } else {
+        return property.type;
+      }
     }
     return null;
   };
 
   const handleEntityPathSelect = (entityPath: string) => {
     if (!contextMenu) return;
-    const { componentId, pendingComponentType } = contextMenu;
+    const { componentId, pendingComponentType, isUpdate } = contextMenu;
 
-    // Check if component already exists at this ID (right-clicked to UPDATE)
-    const existingComponent = findComponent(
-      getCurrentComponents(),
-      componentId
-    );
-
-    if (pendingComponentType) {
-      // CREATE a NEW component (pendingComponentType means we're in create flow)
+    if (isUpdate) {
+      const existingComponent = findComponent(
+        getCurrentComponents(),
+        componentId
+      );
+      const propertyType = getPropertyTypeFromPath(entityPath);
+      const componentType =
+        existingComponent &&
+        (existingComponent.type === "text" ||
+          existingComponent.type === "number")
+          ? propertyType === "number"
+            ? "number"
+            : propertyType === "string"
+              ? "text"
+              : undefined
+          : undefined;
+      updateEntityPath(componentId, entityPath, componentType);
+    } else if (pendingComponentType) {
       if (
         pendingComponentType === "text" ||
         pendingComponentType === "number"
@@ -1291,24 +1317,6 @@ function App() {
         addComponentToContainer(componentId, componentType, entityPath);
       } else {
         addComponentToContainer(componentId, pendingComponentType, entityPath);
-      }
-    } else if (existingComponent) {
-      // UPDATE existing component (right-clicked to change entity path, no pending type)
-      updateEntityPath(componentId, entityPath);
-      const propertyType = getPropertyTypeFromPath(entityPath);
-      if (
-        existingComponent.type === "text" ||
-        existingComponent.type === "number"
-      ) {
-        const componentType = propertyType === "number" ? "number" : "text";
-        setScreens((prev) =>
-          prev.map((screen) => ({
-            ...screen,
-            components: screen.components.map((comp) =>
-              comp.id === componentId ? { ...comp, type: componentType } : comp
-            ),
-          }))
-        );
       }
     }
     setContextMenu(null);

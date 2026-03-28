@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, within } from "./test-utils";
+import { render, screen, within, waitFor } from "./test-utils";
 import userEvent from "@testing-library/user-event";
 import App from "../../App";
 
@@ -363,6 +363,138 @@ describe("App", () => {
     leafBox = document.querySelector(".component-box.depth-1") as HTMLElement;
     expect(leafBox.querySelector(".entity-label")?.textContent).toBe("Product");
     expect(leafBox.querySelector(".property-label")?.textContent).toBe("Price");
+  });
+
+  it("shows only ... placeholder when right-clicking text component", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // First create a text component with ...
+    const rootBox = document.querySelector(
+      ".component-box.depth-0"
+    ) as HTMLElement;
+    await user.pointer({ target: rootBox, keys: "[MouseRight]" });
+    const textOption = screen.getByText("Text");
+    await user.click(textOption);
+
+    // Select ... placeholder
+    const entityPathMenu = document.querySelector(
+      ".entity-path-menu"
+    ) as HTMLElement;
+    const menu = within(entityPathMenu);
+    const ellipsisOption = menu.getByText("...");
+    await user.click(ellipsisOption);
+
+    // Verify leaf component exists
+    await waitFor(() => {
+      const leafBox = document.querySelector(".component-box.depth-1");
+      expect(leafBox).not.toBeNull();
+    });
+    const leafBox = document.querySelector(
+      ".component-box.depth-1"
+    ) as HTMLElement;
+    expect(leafBox.querySelector(".entity-label")?.textContent).toBe("...");
+
+    // Right-click the text leaf component to open entity-path menu for update
+    await user.pointer({ target: leafBox, keys: "[MouseRight]" });
+
+    // Entity path menu should appear
+    expect(screen.getByText("Select Entity Path")).toBeInTheDocument();
+    const updateMenu = within(
+      document.querySelector(".entity-path-menu") as HTMLElement
+    );
+
+    // Check that only ... placeholder is displayed for text component
+    expect(updateMenu.getByText("...")).toBeInTheDocument();
+    // Ensure other placeholders are NOT present
+    expect(updateMenu.queryByText("OK")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("Cancel")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("Select")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("Delete")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("New")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("12...")).not.toBeInTheDocument();
+  });
+
+  it("shows only 12... placeholder when right-clicking number component", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // First create a number component with Price (which is number type)
+    const rootBox = document.querySelector(
+      ".component-box.depth-0"
+    ) as HTMLElement;
+    await user.pointer({ target: rootBox, keys: "[MouseRight]" });
+    const numberOption = screen.getByText("Number");
+    await user.click(numberOption);
+
+    // Select Product > Price entity path
+    const entityPathMenu = document.querySelector(
+      ".entity-path-menu"
+    ) as HTMLElement;
+    const menu = within(entityPathMenu);
+    const productAccordionTitle = menu
+      .getByText("Product")
+      .closest(".accordion-title") as HTMLElement;
+    await user.click(productAccordionTitle);
+    const priceProperty = menu.getByText("Price");
+    await user.click(priceProperty);
+
+    // Verify leaf component exists
+    await waitFor(() => {
+      const leafBox = document.querySelector(".component-box.depth-1");
+      expect(leafBox).not.toBeNull();
+    });
+    const leafBox = document.querySelector(
+      ".component-box.depth-1"
+    ) as HTMLElement;
+
+    // Right-click the number leaf component to open entity-path menu for update
+    await user.pointer({ target: leafBox, keys: "[MouseRight]" });
+
+    // Entity path menu should appear
+    expect(screen.getByText("Select Entity Path")).toBeInTheDocument();
+    const updateMenu = within(
+      document.querySelector(".entity-path-menu") as HTMLElement
+    );
+
+    // Check that only 12... placeholder is displayed for number component
+    expect(updateMenu.getByText("12...")).toBeInTheDocument();
+    // Ensure other placeholders are NOT present
+    expect(updateMenu.queryByText("...")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("OK")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("Cancel")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("Select")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("Delete")).not.toBeInTheDocument();
+    expect(updateMenu.queryByText("New")).not.toBeInTheDocument();
+  });
+
+  it("shows button placeholders when right-clicking button component", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // First create a button component
+    const rootBox = document.querySelector(
+      ".component-box.depth-0"
+    ) as HTMLElement;
+    await user.pointer({ target: rootBox, keys: "[MouseRight]" });
+    const buttonOption = screen.getByText("Button");
+    await user.click(buttonOption);
+
+    // Entity path menu should appear with button placeholders
+    expect(screen.getByText("Select Entity Path")).toBeInTheDocument();
+    const menu = within(
+      document.querySelector(".entity-path-menu") as HTMLElement
+    );
+
+    // Check that button placeholders are displayed
+    expect(menu.getByText("OK")).toBeInTheDocument();
+    expect(menu.getByText("Cancel")).toBeInTheDocument();
+    expect(menu.getByText("Select")).toBeInTheDocument();
+    expect(menu.getByText("Delete")).toBeInTheDocument();
+    expect(menu.getByText("New")).toBeInTheDocument();
+    expect(menu.getByText("...")).toBeInTheDocument();
+    // 12... should NOT be present for button
+    expect(menu.queryByText("12...")).not.toBeInTheDocument();
   });
 
   describe("import/export", () => {

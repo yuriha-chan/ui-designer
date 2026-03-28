@@ -31,6 +31,7 @@ const ComponentNode: React.FC<{
       x: number;
       y: number;
       pendingComponentType?: "text" | "number" | "button" | "input";
+      isUpdate?: boolean;
     } | null
   ) => void;
   previewMode?: boolean;
@@ -234,6 +235,12 @@ const ComponentNode: React.FC<{
           componentId: component.id,
           x: e.clientX,
           y: e.clientY,
+          pendingComponentType: component.type as
+            | "text"
+            | "number"
+            | "button"
+            | "input",
+          isUpdate: true,
         });
       }
     };
