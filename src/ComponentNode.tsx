@@ -291,6 +291,8 @@ const ComponentNode: React.FC<{
                     onChange={(e) =>
                       onTargetScreenChange(component.id, e.target.value)
                     }
+                    bg="white"
+                    color="gray.800"
                     title={
                       targetScreenName
                         ? `Target: ${targetScreenName}`
