@@ -940,6 +940,13 @@ function App() {
         : property.name;
       const isExpanded = expandedPaths.has(currentPath);
 
+      const handleClick = () => {
+        onSelect(currentPath);
+        if (isEntityType && nestedEntity && !expandedPaths.has(currentPath)) {
+          toggleExpanded(currentPath);
+        }
+      };
+
       return (
         <Box>
           <Box
@@ -951,12 +958,8 @@ function App() {
             alignItems="center"
             width="100%"
           >
-            <Box
-              flex="1"
-              onClick={() => onSelect(currentPath)}
-              textAlign="left"
-            >
-              {"  ".repeat(depth)}
+            <Box flex="1" onClick={handleClick} textAlign="left">
+              {depth > 0 ? "  ".repeat(depth) + "▸ " : ""}
               {property.name}
             </Box>
             {isEntityType && nestedEntity && (
