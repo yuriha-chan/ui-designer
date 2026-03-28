@@ -134,6 +134,89 @@ describe("App", () => {
     expect(propertyLabel?.textContent).toBe("Name");
   });
 
+  it("shows full placeholder labels for button component entity path menu", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const rootBox = document.querySelector(
+      ".component-box.depth-0"
+    ) as HTMLElement;
+    await user.pointer({ target: rootBox, keys: "[MouseRight]" });
+
+    // Click Button option (should open entity path menu)
+    const buttonOption = screen.getByText("Button");
+    await user.click(buttonOption);
+
+    // Entity path menu should appear
+    expect(screen.getByText("Select Entity Path")).toBeInTheDocument();
+    const entityPathMenu = document.querySelector(
+      ".entity-path-menu"
+    ) as HTMLElement;
+    expect(entityPathMenu).not.toBeNull();
+    const menu = within(entityPathMenu);
+
+    // Check that all placeholder options are displayed (without colon)
+    expect(menu.getByText("OK")).toBeInTheDocument();
+    expect(menu.getByText("Cancel")).toBeInTheDocument();
+    expect(menu.getByText("Select")).toBeInTheDocument();
+    expect(menu.getByText("Delete")).toBeInTheDocument();
+    expect(menu.getByText("New")).toBeInTheDocument();
+    expect(menu.getByText("...")).toBeInTheDocument();
+
+    // Select a placeholder (e.g., OK)
+    const okOption = menu.getByText("OK");
+    await user.click(okOption);
+
+    // Should add a leaf component with placeholder displayed (without colon)
+    const leafComponents = document.querySelectorAll(".component-box.depth-1");
+    expect(leafComponents.length).toBe(1);
+    const leafBox = leafComponents[0];
+    const entityLabel = leafBox.querySelector(".entity-label");
+    expect(entityLabel?.textContent).toBe("OK");
+  });
+
+  it("shows only ... placeholder for text/number component entity path menu", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const rootBox = document.querySelector(
+      ".component-box.depth-0"
+    ) as HTMLElement;
+    await user.pointer({ target: rootBox, keys: "[MouseRight]" });
+
+    // Click Text option (should open entity path menu)
+    const textOption = screen.getByText("Text");
+    await user.click(textOption);
+
+    // Entity path menu should appear
+    expect(screen.getByText("Select Entity Path")).toBeInTheDocument();
+    const entityPathMenu = document.querySelector(
+      ".entity-path-menu"
+    ) as HTMLElement;
+    expect(entityPathMenu).not.toBeNull();
+    const menu = within(entityPathMenu);
+
+    // Check that only ... placeholder is displayed (other placeholders should not be present)
+    expect(menu.getByText("...")).toBeInTheDocument();
+    // Ensure other placeholders are NOT present
+    expect(menu.queryByText("OK")).not.toBeInTheDocument();
+    expect(menu.queryByText("Cancel")).not.toBeInTheDocument();
+    expect(menu.queryByText("Select")).not.toBeInTheDocument();
+    expect(menu.queryByText("Delete")).not.toBeInTheDocument();
+    expect(menu.queryByText("New")).not.toBeInTheDocument();
+
+    // Select ... placeholder
+    const ellipsisOption = menu.getByText("...");
+    await user.click(ellipsisOption);
+
+    // Should add a leaf component with ... displayed
+    const leafComponents = document.querySelectorAll(".component-box.depth-1");
+    expect(leafComponents.length).toBe(1);
+    const leafBox = leafComponents[0];
+    const entityLabel = leafBox.querySelector(".entity-label");
+    expect(entityLabel?.textContent).toBe("...");
+  });
+
   it("copies a component when copy button is clicked", async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -609,13 +692,18 @@ describe("App", () => {
       const contextMenu = document.querySelector(
         ".entity-path-menu"
       ) as HTMLElement;
-      const accountOption = contextMenu.querySelectorAll(
-        ".accordion-title"
-      )[1] as HTMLElement;
-      await user.click(accountOption);
-      const nameProperty = contextMenu.querySelector(
-        ".property-option"
-      ) as HTMLElement;
+      expect(contextMenu).not.toBeNull();
+      const menu = within(contextMenu);
+
+      // Expand Account entity by clicking the accordion title
+      const accountAccordionTitle = menu
+        .getByText("Account")
+        .closest(".accordion-title") as HTMLElement;
+      expect(accountAccordionTitle).not.toBeNull();
+      await user.click(accountAccordionTitle);
+
+      // Click property "Name"
+      const nameProperty = menu.getByText("Name");
       await user.click(nameProperty);
 
       // Verify component has entity path display (check individual labels)
@@ -656,13 +744,18 @@ describe("App", () => {
       const contextMenu = document.querySelector(
         ".entity-path-menu"
       ) as HTMLElement;
-      const accountOption = contextMenu.querySelectorAll(
-        ".accordion-title"
-      )[1] as HTMLElement;
-      await user.click(accountOption);
-      const nameProperty = contextMenu.querySelector(
-        ".property-option"
-      ) as HTMLElement;
+      expect(contextMenu).not.toBeNull();
+      const menu = within(contextMenu);
+
+      // Expand Account entity by clicking the accordion title
+      const accountAccordionTitle = menu
+        .getByText("Account")
+        .closest(".accordion-title") as HTMLElement;
+      expect(accountAccordionTitle).not.toBeNull();
+      await user.click(accountAccordionTitle);
+
+      // Click property "Name"
+      const nameProperty = menu.getByText("Name");
       await user.click(nameProperty);
 
       // Verify initial entity path (check individual labels)

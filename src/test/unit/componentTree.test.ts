@@ -70,6 +70,39 @@ describe("parseEntityPath", () => {
     });
   });
 
+  it("handles prefixed placeholders (:OK, :Cancel, :Select, :Delete, :New, :...)", () => {
+    expect(parseEntityPath(":OK")).toEqual({
+      entity: "OK",
+      property: "",
+      pathParts: [],
+    });
+    expect(parseEntityPath(":Cancel")).toEqual({
+      entity: "Cancel",
+      property: "",
+      pathParts: [],
+    });
+    expect(parseEntityPath(":Select")).toEqual({
+      entity: "Select",
+      property: "",
+      pathParts: [],
+    });
+    expect(parseEntityPath(":Delete")).toEqual({
+      entity: "Delete",
+      property: "",
+      pathParts: [],
+    });
+    expect(parseEntityPath(":New")).toEqual({
+      entity: "New",
+      property: "",
+      pathParts: [],
+    });
+    expect(parseEntityPath(":...")).toEqual({
+      entity: "...",
+      property: "",
+      pathParts: [],
+    });
+  });
+
   it("returns original string as entity for malformed paths", () => {
     expect(parseEntityPath("Account")).toEqual({
       entity: "Account",

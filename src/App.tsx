@@ -28,7 +28,6 @@ import {
   Flex,
   CloseButton,
   Tabs,
-  Portal,
 } from "@chakra-ui/react";
 import { createListCollection } from "@chakra-ui/react";
 import {
@@ -437,7 +436,7 @@ function App() {
     (
       entityIndex: number,
       propertyIndex: number,
-      newType: "string" | "number" | "entity",
+      newType: "string" | "number" | "entity" | "function",
       newEntityType?: string
     ) => {
       setEntities((prev) =>
@@ -727,6 +726,7 @@ function App() {
       type: "container" | "text" | "number" | "button" | "input",
       entityPath?: string
     ) => {
+      console.log("addComponentToContainer", { containerId, type, entityPath });
       const newComponent: UIComponent = {
         id: uuidv4(),
         type,
@@ -915,7 +915,8 @@ function App() {
     onClose: () => void;
     x: number;
     y: number;
-  }> = ({ entities, onSelect, onClose, x, y }) => {
+    componentType?: "text" | "number" | "button" | "input";
+  }> = ({ entities, onSelect, onClose, x, y, componentType }) => {
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
     const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
 
@@ -925,6 +926,11 @@ function App() {
     const menuBottom = isNearBottom ? 0 : undefined;
 
     const findEntity = (name: string) => entities.find((e) => e.name === name);
+
+    const placeholderOptions =
+      componentType === "button" || componentType === undefined
+        ? ["OK", "Cancel", "Select", "Delete", "New", "..."]
+        : ["..."];
 
     const handleValueChange = (details: { value: string[] }) => {
       const value = details.value;
@@ -1044,21 +1050,19 @@ function App() {
           <CloseButton onClick={onClose} />
         </Flex>
         <VStack gap={1} p={2} align="stretch">
-          {["OK", "Cancel", "Select", "Delete", "New", "..."].map(
-            (placeholder) => (
-              <Box
-                key={placeholder}
-                className="property-option"
-                p={1}
-                cursor="pointer"
-                _hover={{ bg: "gray.100" }}
-                onClick={() => onSelect(placeholder)}
-                fontWeight={placeholder === "..." ? "bold" : "normal"}
-              >
-                {placeholder}
-              </Box>
-            )
-          )}
+          {placeholderOptions.map((placeholder) => (
+            <Box
+              key={placeholder}
+              className="placeholder-option"
+              p={1}
+              cursor="pointer"
+              _hover={{ bg: "gray.100" }}
+              onClick={() => onSelect(`:${placeholder}`)}
+              fontWeight={placeholder === "..." ? "bold" : "normal"}
+            >
+              {placeholder}
+            </Box>
+          ))}
         </VStack>
         <Accordion.Root
           collapsible
@@ -1900,6 +1904,7 @@ function App() {
                 onClose={() => setContextMenu(null)}
                 x={contextMenu.x}
                 y={contextMenu.y}
+                componentType={contextMenu.pendingComponentType}
               />
             )}
             {contextMenu && contextMenu.type === "container-create" && (

@@ -88,7 +88,7 @@ function isValidEntityProperty(p: any): boolean {
   if (typeof p !== "object" || p === null) return false;
   if (typeof p.name !== "string") return false;
   if (typeof p.type !== "string") return false;
-  if (!["string", "number", "entity"].includes(p.type)) return false;
+  if (!["string", "number", "entity", "function"].includes(p.type)) return false;
   if (p.type === "entity") {
     if (typeof p.entity_type !== "string") return false;
   }

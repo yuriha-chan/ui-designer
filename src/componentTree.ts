@@ -52,13 +52,22 @@ export const sortComponentsBySExpression = (
 export const parseEntityPath = (
   entityPath: string | undefined
 ): { entity: string; property: string; pathParts: string[] } => {
-  if (!entityPath || entityPath === "...") {
+  if (!entityPath) {
     return { entity: "...", property: "", pathParts: [] };
   }
-  const parts = entityPath.split(">").map((p) => p.trim());
+  const trimmed = entityPath.trim();
+  if (trimmed === "" || trimmed === "...") {
+    return { entity: "...", property: "", pathParts: [] };
+  }
+  // Handle prefixed placeholders (e.g., :OK, :Cancel, :Select, :Delete, :New, :...)
+  if (trimmed.startsWith(":")) {
+    const placeholder = trimmed.slice(1);
+    return { entity: placeholder, property: "", pathParts: [] };
+  }
+  const parts = trimmed.split(">").map((p) => p.trim());
   // Check for empty parts (malformed)
   if (parts.some((p) => p === "")) {
-    return { entity: entityPath, property: "", pathParts: [entityPath] };
+    return { entity: trimmed, property: "", pathParts: [trimmed] };
   }
   if (parts.length === 2) {
     return { entity: parts[0], property: parts[1], pathParts: parts };
@@ -71,7 +80,7 @@ export const parseEntityPath = (
     };
   }
   // フォーマットが不正な場合はそのまま表示
-  return { entity: entityPath, property: "", pathParts: [entityPath] };
+  return { entity: trimmed, property: "", pathParts: [trimmed] };
 };
 
 // コンポーネントが別のコンポーネントの子孫かどうかを判定
