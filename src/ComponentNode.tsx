@@ -235,6 +235,8 @@ const ComponentNode: React.FC<{
         ? "cursor-pointer"
         : "cursor-default";
 
+    const isRoot = depth === 0;
+
     return (
       <Box className="component-node">
         <Box
@@ -246,6 +248,7 @@ const ComponentNode: React.FC<{
             backgroundColor: color,
             opacity: isDragging ? 0.5 : 1,
             transition: "all 0.2s ease",
+            ...(isRoot && { minHeight: "100vh", height: "100%" }),
           }}
         >
           <Box className="component-content">
