@@ -51,7 +51,9 @@ const ComponentNode: React.FC<{
     previewMode = false,
   }) => {
     const color = getColorForComponent(component.type, depth);
-    const { entity, property } = parseEntityPath(component.entityPath);
+    const { entity, property, pathParts } = parseEntityPath(
+      component.entityPath
+    );
     const targetScreenName = component.targetScreen
       ? screens.find((s) => s.id === component.targetScreen)?.name
       : null;
@@ -249,8 +251,33 @@ const ComponentNode: React.FC<{
           <Box className="component-content">
             {component.type !== "container" && (
               <Box className="entity-path-display">
-                <Box className="entity-label">{entity}</Box>
-                {property && <Box className="property-label">{property}</Box>}
+                {pathParts.length > 2 ? (
+                  <>
+                    <Box className="entity-label">
+                      {pathParts.slice(0, -1).map((part, idx) => (
+                        <React.Fragment key={idx}>
+                          {idx > 0 && " > "}
+                          <Box
+                            as="span"
+                            className={
+                              idx === 0 ? "path-entity" : "path-property"
+                            }
+                          >
+                            {part}
+                          </Box>
+                        </React.Fragment>
+                      ))}
+                    </Box>
+                    <Box className="property-label">{property}</Box>
+                  </>
+                ) : (
+                  <>
+                    <Box className="entity-label">{entity}</Box>
+                    {property && (
+                      <Box className="property-label">{property}</Box>
+                    )}
+                  </>
+                )}
               </Box>
             )}
             {!previewMode && component.type === "button" && (

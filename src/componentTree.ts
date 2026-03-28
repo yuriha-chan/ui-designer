@@ -51,16 +51,27 @@ export const sortComponentsBySExpression = (
 // エンティティパスを解析してエンティティ名とプロパティ名に分割
 export const parseEntityPath = (
   entityPath: string | undefined
-): { entity: string; property: string } => {
+): { entity: string; property: string; pathParts: string[] } => {
   if (!entityPath || entityPath === "...") {
-    return { entity: "...", property: "" };
+    return { entity: "...", property: "", pathParts: [] };
   }
-  const parts = entityPath.split(">");
+  const parts = entityPath.split(">").map((p) => p.trim());
+  // Check for empty parts (malformed)
+  if (parts.some((p) => p === "")) {
+    return { entity: entityPath, property: "", pathParts: [entityPath] };
+  }
   if (parts.length === 2) {
-    return { entity: parts[0].trim(), property: parts[1].trim() };
+    return { entity: parts[0], property: parts[1], pathParts: parts };
+  }
+  if (parts.length > 2) {
+    return {
+      entity: parts.slice(0, -1).join(" > "),
+      property: parts[parts.length - 1],
+      pathParts: parts,
+    };
   }
   // フォーマットが不正な場合はそのまま表示
-  return { entity: entityPath, property: "" };
+  return { entity: entityPath, property: "", pathParts: [entityPath] };
 };
 
 // コンポーネントが別のコンポーネントの子孫かどうかを判定

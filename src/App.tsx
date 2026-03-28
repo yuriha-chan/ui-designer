@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { v4 as uuidv4 } from "uuid";
-import { UIComponent, Entity, Screen } from "./types";
+import { UIComponent, Entity, Screen, EntityProperty } from "./types";
 import { DragManager } from "./DragManager";
 import { exportDesign, exportStoryboard, importDesign } from "./importExport";
 import { saveToStorage, loadFromStorage } from "./storage";
@@ -137,9 +137,6 @@ function App() {
   } | null>(null);
 
   // Entity editing state
-  const [editingEntityName, setEditingEntityName] = useState<string | null>(
-    null
-  );
   const [editingEntityIndex, setEditingEntityIndex] = useState<number | null>(
     null
   );
@@ -894,6 +891,9 @@ function App() {
     y: number;
   }> = ({ entities, onSelect, onClose, x, y }) => {
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+    const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+
+    const findEntity = (name: string) => entities.find((e) => e.name === name);
 
     const handleValueChange = (details: { value: string[] }) => {
       const value = details.value;
@@ -901,12 +901,87 @@ function App() {
         setExpandedIndex(null);
       } else {
         const firstValue = value[0];
-        // If it's a number string, parse it
         const num = parseInt(firstValue, 10);
         if (!isNaN(num)) {
           setExpandedIndex(num);
         }
       }
+    };
+
+    const toggleExpanded = (path: string) => {
+      setExpandedPaths((prev) => {
+        const next = new Set(prev);
+        if (next.has(path)) {
+          next.delete(path);
+        } else {
+          next.add(path);
+        }
+        return next;
+      });
+    };
+
+    const PropertyOption: React.FC<{
+      property: EntityProperty;
+      basePath: string;
+      depth: number;
+    }> = ({ property, basePath, depth }) => {
+      const isEntityType = property.type === "entity" && property.entity_type;
+      const nestedEntity = isEntityType
+        ? findEntity(property.entity_type!)
+        : null;
+
+      const currentPath = basePath
+        ? `${basePath}>${property.name}`
+        : property.name;
+      const isExpanded = expandedPaths.has(currentPath);
+
+      return (
+        <Box pl={depth * 4}>
+          <Box
+            className="property-option"
+            p={2}
+            cursor="pointer"
+            _hover={{ bg: "gray.100" }}
+            display="flex"
+            alignItems="center"
+            gap={2}
+          >
+            <Box flex="1" onClick={() => onSelect(currentPath)}>
+              {property.name}
+            </Box>
+            {isEntityType && nestedEntity && (
+              <Box
+                as="button"
+                fontSize="xs"
+                color="orange.500"
+                fontWeight="bold"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  toggleExpanded(currentPath);
+                }}
+                px={2}
+                py={1}
+                borderRadius="md"
+                _hover={{ bg: "orange.100" }}
+              >
+                {isExpanded ? "▼" : "▶"} {property.entity_type}
+              </Box>
+            )}
+          </Box>
+          {isExpanded && nestedEntity && (
+            <Box>
+              {nestedEntity.properties.map((nestedProp) => (
+                <PropertyOption
+                  key={nestedProp.name}
+                  property={nestedProp}
+                  basePath={currentPath}
+                  depth={depth + 1}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
+      );
     };
 
     return (
@@ -962,18 +1037,12 @@ function App() {
               <Accordion.ItemContent className="accordion-content" p={4}>
                 <Accordion.ItemBody>
                   {entity.properties.map((property) => (
-                    <Box
+                    <PropertyOption
                       key={property.name}
-                      className="property-option"
-                      onClick={() =>
-                        onSelect(`${entity.name}>${property.name}`)
-                      }
-                      p={2}
-                      cursor="pointer"
-                      _hover={{ bg: "gray.100" }}
-                    >
-                      {property.name}
-                    </Box>
+                      property={property}
+                      basePath={entity.name}
+                      depth={0}
+                    />
                   ))}
                 </Accordion.ItemBody>
               </Accordion.ItemContent>
@@ -1353,33 +1422,27 @@ function App() {
                                   {editingEntityIndex === entityIndex ? (
                                     <Input
                                       size="sm"
-                                      value={editingEntityName || entity.name}
-                                      onChange={(e) =>
-                                        setEditingEntityName(e.target.value)
-                                      }
-                                      onBlur={() => {
-                                        if (editingEntityName?.trim()) {
+                                      defaultValue={entity.name}
+                                      onBlur={(e) => {
+                                        if (e.target.value.trim()) {
                                           updateEntityName(
                                             entityIndex,
-                                            editingEntityName.trim()
+                                            e.target.value.trim()
                                           );
                                         }
                                         setEditingEntityIndex(null);
-                                        setEditingEntityName(null);
                                       }}
                                       onKeyDown={(e) => {
                                         if (e.key === "Enter") {
-                                          if (editingEntityName?.trim()) {
+                                          if (e.currentTarget.value.trim()) {
                                             updateEntityName(
                                               entityIndex,
-                                              editingEntityName.trim()
+                                              e.currentTarget.value.trim()
                                             );
                                           }
                                           setEditingEntityIndex(null);
-                                          setEditingEntityName(null);
                                         } else if (e.key === "Escape") {
                                           setEditingEntityIndex(null);
-                                          setEditingEntityName(null);
                                         }
                                       }}
                                       autoFocus
@@ -1391,7 +1454,6 @@ function App() {
                                       cursor="pointer"
                                       onClick={() => {
                                         setEditingEntityIndex(entityIndex);
-                                        setEditingEntityName(entity.name);
                                       }}
                                     >
                                       {entity.name}
@@ -1446,35 +1508,31 @@ function App() {
                                         propIndex ? (
                                         <Input
                                           size="xs"
-                                          value={editingEntityName || prop.name}
-                                          onChange={(e) =>
-                                            setEditingEntityName(e.target.value)
-                                          }
-                                          onBlur={() => {
-                                            if (editingEntityName?.trim()) {
+                                          defaultValue={prop.name}
+                                          onBlur={(e) => {
+                                            if (e.target.value.trim()) {
                                               updatePropertyName(
                                                 entityIndex,
                                                 propIndex,
-                                                editingEntityName.trim()
+                                                e.target.value.trim()
                                               );
                                             }
                                             setEditingPropertyIndex(null);
-                                            setEditingEntityName(null);
                                           }}
                                           onKeyDown={(e) => {
                                             if (e.key === "Enter") {
-                                              if (editingEntityName?.trim()) {
+                                              if (
+                                                e.currentTarget.value.trim()
+                                              ) {
                                                 updatePropertyName(
                                                   entityIndex,
                                                   propIndex,
-                                                  editingEntityName.trim()
+                                                  e.currentTarget.value.trim()
                                                 );
                                               }
                                               setEditingPropertyIndex(null);
-                                              setEditingEntityName(null);
                                             } else if (e.key === "Escape") {
                                               setEditingPropertyIndex(null);
-                                              setEditingEntityName(null);
                                             }
                                           }}
                                           autoFocus
@@ -1493,7 +1551,6 @@ function App() {
                                               entityIndex,
                                               propertyIndex: propIndex,
                                             });
-                                            setEditingEntityName(prop.name);
                                           }}
                                         >
                                           {prop.name}

@@ -48,26 +48,47 @@ describe("parseEntityPath", () => {
     expect(parseEntityPath("Account>Name")).toEqual({
       entity: "Account",
       property: "Name",
+      pathParts: ["Account", "Name"],
     });
     expect(parseEntityPath("Product>Price")).toEqual({
       entity: "Product",
       property: "Price",
+      pathParts: ["Product", "Price"],
     });
   });
 
   it("handles undefined or ... as empty", () => {
-    expect(parseEntityPath(undefined)).toEqual({ entity: "...", property: "" });
-    expect(parseEntityPath("...")).toEqual({ entity: "...", property: "" });
+    expect(parseEntityPath(undefined)).toEqual({
+      entity: "...",
+      property: "",
+      pathParts: [],
+    });
+    expect(parseEntityPath("...")).toEqual({
+      entity: "...",
+      property: "",
+      pathParts: [],
+    });
   });
 
   it("returns original string as entity for malformed paths", () => {
     expect(parseEntityPath("Account")).toEqual({
       entity: "Account",
       property: "",
+      pathParts: ["Account"],
     });
+    // Double > contains empty parts, treated as malformed
     expect(parseEntityPath("Account>>Name")).toEqual({
       entity: "Account>>Name",
       property: "",
+      pathParts: ["Account>>Name"],
+    });
+  });
+
+  it("parses nested entity>entity>property format", () => {
+    expect(parseEntityPath("Product>Creator>Username")).toEqual({
+      entity: "Product > Creator",
+      property: "Username",
+      pathParts: ["Product", "Creator", "Username"],
     });
   });
 });
