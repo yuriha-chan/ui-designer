@@ -1411,7 +1411,11 @@ function App() {
                 </Box>
                 {!previewMode && (
                   <Box className="side-panel">
-                    <Box className="side-panel-content">
+                    <Box
+                      className="side-panel-content"
+                      overflowY="auto"
+                      height="100%"
+                    >
                       <Tabs.Root
                         value={panelType}
                         onValueChange={(details) =>
