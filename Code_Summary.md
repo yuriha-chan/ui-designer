@@ -320,7 +320,7 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 
 1. **Drag state persistence**: `dragStore` maintains state outside React tree
 2. **Throttle timing**: 200ms throttle on drag target updates may affect UX
-3. **No undo/redo**: Component tree modifications are not reversible
+3. **Undo/redo**: Global history with 50-step limit, accessible via Ctrl+Z / Ctrl+Shift+Z or toolbar buttons
 4. **Auto-save**: Designs saved to localStorage with "autosave" key, debounced 1 second
 5. **Mock dependencies**: Tests rely on mocked versions of react-dnd, uuid, usehooks, storage
 6. **Deterministic testing**: UUID mocking required for deterministic test results

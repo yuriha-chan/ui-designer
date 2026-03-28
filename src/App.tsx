@@ -58,9 +58,18 @@ const initialScreen: Screen = {
 
 const initialScreens: Screen[] = [initialScreen];
 
+const MAX_HISTORY = 50;
+
 function App() {
   // ストーリーボード状態
   const [screens, setScreens] = useState<Screen[]>(initialScreens);
+  const [history, setHistory] = useState<Screen[][]>([initialScreens]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  // Refs for synchronous access in callbacks
+  const historyRef = useRef<Screen[][]>([initialScreens]);
+  const historyIndexRef = useRef(0);
+
   const [currentScreenId, setCurrentScreenId] = useState<string>(
     initialScreen.id
   );
@@ -97,19 +106,74 @@ function App() {
     return screens.find((screen) => screen.id === currentScreenId);
   }, [screens, currentScreenId]);
 
+  // Sync refs with state
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  useEffect(() => {
+    historyIndexRef.current = historyIndex;
+  }, [historyIndex]);
+
   // 現在の画面のコンポーネントを更新するヘルパー関数
   const updateCurrentScreenComponents = useCallback(
     (updater: (components: UIComponent[]) => UIComponent[]) => {
-      setScreens((prevScreens) =>
-        prevScreens.map((screen) =>
+      setScreens((prevScreens) => {
+        const newScreens = prevScreens.map((screen) =>
           screen.id === currentScreenId
             ? { ...screen, components: updater(screen.components) }
             : screen
-        )
-      );
+        );
+
+        // Add new state to history, truncate forward history
+        const newHistory = historyRef.current.slice(
+          0,
+          historyIndexRef.current + 1
+        );
+        newHistory.push(JSON.parse(JSON.stringify(newScreens)));
+        if (newHistory.length > MAX_HISTORY) {
+          newHistory.shift();
+        }
+        const newIndex = newHistory.length - 1;
+
+        setHistory(newHistory);
+        setHistoryIndex(newIndex);
+        historyRef.current = newHistory;
+        historyIndexRef.current = newIndex;
+
+        return newScreens;
+      });
     },
     [currentScreenId]
   );
+
+  // Undo function
+  const undo = useCallback(() => {
+    const currentIndex = historyIndexRef.current;
+    if (currentIndex > 0) {
+      const prevState = historyRef.current[currentIndex - 1];
+      if (prevState) {
+        setScreens(JSON.parse(JSON.stringify(prevState)));
+        setHistoryIndex(currentIndex - 1);
+      }
+    }
+  }, []);
+
+  // Redo function
+  const redo = useCallback(() => {
+    const currentIndex = historyIndexRef.current;
+    if (currentIndex < historyRef.current.length - 1) {
+      const nextState = historyRef.current[currentIndex + 1];
+      if (nextState) {
+        setScreens(JSON.parse(JSON.stringify(nextState)));
+        setHistoryIndex(currentIndex + 1);
+      }
+    }
+  }, []);
+
+  // Check if undo/redo are available
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
 
   // 画面操作関数
   const addScreen = useCallback((name: string) => {
@@ -228,6 +292,25 @@ function App() {
       document.removeEventListener("keydown", handleEscape);
     };
   }, [contextMenu]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyboard = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        if (e.shiftKey) {
+          e.preventDefault();
+          redo();
+        } else {
+          e.preventDefault();
+          undo();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyboard);
+    return () => {
+      document.removeEventListener("keydown", handleKeyboard);
+    };
+  }, [undo, redo]);
 
   const isDescendant = useCallback(
     (parentId: string, childId: string): boolean => {
@@ -803,6 +886,24 @@ function App() {
                   )}
                 </Box>
                 <HStack className="menu-bar" gap={2}>
+                  <Button
+                    onClick={undo}
+                    disabled={!canUndo}
+                    colorScheme="gray"
+                    size="sm"
+                    title="Undo (Ctrl+Z)"
+                  >
+                    Undo
+                  </Button>
+                  <Button
+                    onClick={redo}
+                    disabled={!canRedo}
+                    colorScheme="gray"
+                    size="sm"
+                    title="Redo (Ctrl+Shift+Z)"
+                  >
+                    Redo
+                  </Button>
                   <Button
                     onClick={() => setPreviewMode(!previewMode)}
                     colorScheme="blue"
