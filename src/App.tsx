@@ -27,6 +27,7 @@ import {
   findAndRemove,
   findComponent,
   deepCopy,
+  generateSExpression,
 } from "./componentTree";
 import { ComponentNode } from "./ComponentNode";
 import "./App.css";
@@ -118,11 +119,28 @@ function App() {
   const updateCurrentScreenComponents = useCallback(
     (updater: (components: UIComponent[]) => UIComponent[]) => {
       setScreens((prevScreens) => {
+        const prevScreen = prevScreens.find((s) => s.id === currentScreenId);
+        const prevComponents = prevScreen?.components || [];
+
         const newScreens = prevScreens.map((screen) =>
           screen.id === currentScreenId
             ? { ...screen, components: updater(screen.components) }
             : screen
         );
+
+        const newScreen = newScreens.find((s) => s.id === currentScreenId);
+        const newComponents = newScreen?.components || [];
+
+        // Skip history update if components are semantically identical (normalized S-expression)
+        const prevSExpr = sortComponentsBySExpression(prevComponents)
+          .map(generateSExpression)
+          .join(" ");
+        const newSExpr = sortComponentsBySExpression(newComponents)
+          .map(generateSExpression)
+          .join(" ");
+        if (prevSExpr === newSExpr) {
+          return newScreens;
+        }
 
         // Add new state to history, truncate forward history
         const newHistory = historyRef.current.slice(
