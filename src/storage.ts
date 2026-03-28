@@ -38,7 +38,22 @@ function isValidEntity(obj: unknown): obj is Entity {
   const entity = obj as Record<string, unknown>;
   if (typeof entity.name !== "string") return false;
   if (!Array.isArray(entity.properties)) return false;
-  return entity.properties.every((p) => typeof p === "string");
+  if (!entity.properties.every(isValidEntityProperty)) return false;
+  return true;
+}
+
+function isValidEntityProperty(
+  p: unknown
+): p is { name: string; type: string; entity_type?: string } {
+  if (typeof p !== "object" || p === null) return false;
+  const prop = p as Record<string, unknown>;
+  if (typeof prop.name !== "string") return false;
+  if (typeof prop.type !== "string") return false;
+  if (!["string", "number", "entity"].includes(prop.type)) return false;
+  if (prop.type === "entity") {
+    if (typeof prop.entity_type !== "string") return false;
+  }
+  return true;
 }
 
 function isValidUIComponent(obj: unknown): boolean {

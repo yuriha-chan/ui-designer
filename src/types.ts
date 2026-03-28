@@ -1,7 +1,16 @@
+// エンティティプロパティ定義
+export type PropertyType = "string" | "number" | "entity";
+
+export interface EntityProperty {
+  name: string;
+  type: PropertyType;
+  entity_type?: string;
+}
+
 // エンティティ定義
 export interface Entity {
   name: string;
-  properties: string[];
+  properties: EntityProperty[];
 }
 
 // UIコンポーネントの種類

@@ -165,6 +165,71 @@ describe("loadFromStorage", () => {
     expect(result).toBeNull();
   });
 
+  it("returns null for entity with string properties (old format)", () => {
+    mockLocalStorage.data["autosave"] = JSON.stringify({
+      screens: [],
+      entities: [{ name: "Account", properties: ["Name", "Email"] }],
+      currentScreenId: "",
+    });
+
+    const result = loadFromStorage();
+    expect(result).toBeNull();
+  });
+
+  it("returns data for entity with typed EntityProperty", () => {
+    mockLocalStorage.data["autosave"] = JSON.stringify({
+      screens: [],
+      entities: [
+        {
+          name: "Account",
+          properties: [
+            { name: "Name", type: "string" },
+            { name: "Balance", type: "number" },
+          ],
+        },
+      ],
+      currentScreenId: "",
+    });
+
+    const result = loadFromStorage();
+    expect(result).not.toBeNull();
+    expect(result?.entities).toHaveLength(1);
+  });
+
+  it("returns null for entity with type=entity but no entity_type", () => {
+    mockLocalStorage.data["autosave"] = JSON.stringify({
+      screens: [],
+      entities: [
+        {
+          name: "Order",
+          properties: [{ name: "Account", type: "entity" }],
+        },
+      ],
+      currentScreenId: "",
+    });
+
+    const result = loadFromStorage();
+    expect(result).toBeNull();
+  });
+
+  it("returns data for entity with type=entity and entity_type", () => {
+    mockLocalStorage.data["autosave"] = JSON.stringify({
+      screens: [],
+      entities: [
+        {
+          name: "Order",
+          properties: [
+            { name: "Account", type: "entity", entity_type: "Account" },
+          ],
+        },
+      ],
+      currentScreenId: "",
+    });
+
+    const result = loadFromStorage();
+    expect(result).not.toBeNull();
+  });
+
   it("handles localStorage errors gracefully", () => {
     const errorStorage = {
       getItem: vi.fn(() => {

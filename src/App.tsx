@@ -34,10 +34,41 @@ import "./App.css";
 
 // サンプルエンティティ定義
 const sampleEntities: Entity[] = [
-  { name: "Account", properties: ["Name", "Email", "Balance", "Status"] },
-  { name: "Product", properties: ["Title", "Price", "Stock", "Category"] },
-  { name: "Order", properties: ["ID", "Date", "Total", "Status"] },
-  { name: "User", properties: ["Username", "Role", "LastLogin"] },
+  {
+    name: "Account",
+    properties: [
+      { name: "Name", type: "string" },
+      { name: "Email", type: "string" },
+      { name: "Balance", type: "number" },
+      { name: "Status", type: "string" },
+    ],
+  },
+  {
+    name: "Product",
+    properties: [
+      { name: "Title", type: "string" },
+      { name: "Price", type: "number" },
+      { name: "Stock", type: "number" },
+      { name: "Category", type: "string" },
+    ],
+  },
+  {
+    name: "Order",
+    properties: [
+      { name: "ID", type: "string" },
+      { name: "Date", type: "string" },
+      { name: "Total", type: "number" },
+      { name: "Status", type: "string" },
+    ],
+  },
+  {
+    name: "User",
+    properties: [
+      { name: "Username", type: "string" },
+      { name: "Role", type: "string" },
+      { name: "LastLogin", type: "string" },
+    ],
+  },
 ];
 
 // 初期データ
@@ -712,14 +743,16 @@ function App() {
                 <Accordion.ItemBody>
                   {entity.properties.map((property) => (
                     <Box
-                      key={property}
+                      key={property.name}
                       className="property-option"
-                      onClick={() => onSelect(`${entity.name}>${property}`)}
+                      onClick={() =>
+                        onSelect(`${entity.name}>${property.name}`)
+                      }
                       p={2}
                       cursor="pointer"
                       _hover={{ bg: "gray.100" }}
                     >
-                      {property}
+                      {property.name}
                     </Box>
                   ))}
                 </Accordion.ItemBody>
@@ -1043,11 +1076,11 @@ function App() {
                                 >
                                   {entity.properties.map((prop) => (
                                     <Box
-                                      key={prop}
+                                      key={prop.name}
                                       className="entity-property"
                                       fontSize="sm"
                                     >
-                                      {entity.name} &gt; {prop}
+                                      {entity.name} &gt; {prop.name}
                                     </Box>
                                   ))}
                                 </VStack>

@@ -80,7 +80,18 @@ function isValidEntity(obj: any): obj is Entity {
   if (typeof obj !== "object" || obj === null) return false;
   if (typeof obj.name !== "string") return false;
   if (!Array.isArray(obj.properties)) return false;
-  if (!obj.properties.every((p: any) => typeof p === "string")) return false;
+  if (!obj.properties.every(isValidEntityProperty)) return false;
+  return true;
+}
+
+function isValidEntityProperty(p: any): boolean {
+  if (typeof p !== "object" || p === null) return false;
+  if (typeof p.name !== "string") return false;
+  if (typeof p.type !== "string") return false;
+  if (!["string", "number", "entity"].includes(p.type)) return false;
+  if (p.type === "entity") {
+    if (typeof p.entity_type !== "string") return false;
+  }
   return true;
 }
 
