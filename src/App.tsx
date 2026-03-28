@@ -1098,14 +1098,15 @@ function App() {
           </Text>
           <CloseButton onClick={onClose} />
         </Flex>
-        <VStack className="menu-options" gap={2} p={4}>
+        <VStack className="menu-options" gap={1} p={2}>
           <Flex
             className="menu-option"
             onClick={() => onSelect("container")}
             align="center"
-            gap={3}
-            p={3}
+            gap={2}
+            p={2}
             cursor="pointer"
+            width="100%"
             _hover={{ bg: "gray.100" }}
           >
             <Box className="option-icon" fontSize="xl">
@@ -1117,9 +1118,10 @@ function App() {
             className="menu-option"
             onClick={() => onSelect("text")}
             align="center"
-            gap={3}
-            p={3}
+            gap={2}
+            p={2}
             cursor="pointer"
+            width="100%"
             _hover={{ bg: "gray.100" }}
           >
             <Box className="option-icon" fontSize="xl" color="blue.500">
@@ -1131,9 +1133,10 @@ function App() {
             className="menu-option"
             onClick={() => onSelect("number")}
             align="center"
-            gap={3}
-            p={3}
+            gap={2}
+            p={2}
             cursor="pointer"
+            width="100%"
             _hover={{ bg: "gray.100" }}
           >
             <Box className="option-icon" fontSize="xl" color="green.500">
@@ -1145,9 +1148,10 @@ function App() {
             className="menu-option"
             onClick={() => onSelect("button")}
             align="center"
-            gap={3}
-            p={3}
+            gap={2}
+            p={2}
             cursor="pointer"
+            width="100%"
             _hover={{ bg: "gray.100" }}
           >
             <Box className="option-icon" fontSize="xl" color="red.500">
@@ -1159,9 +1163,10 @@ function App() {
             className="menu-option"
             onClick={() => onSelect("input")}
             align="center"
-            gap={3}
-            p={3}
+            gap={2}
+            p={2}
             cursor="pointer"
+            width="100%"
             _hover={{ bg: "gray.100" }}
           >
             <Box className="option-icon" fontSize="xl" color="purple.500">
