@@ -30,6 +30,7 @@ const ComponentNode: React.FC<{
       componentId: string;
       x: number;
       y: number;
+      pendingComponentType?: "text" | "number" | "button" | "input";
     } | null
   ) => void;
   previewMode?: boolean;
@@ -220,14 +221,21 @@ const ComponentNode: React.FC<{
     const handleContextMenu = (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const menuType =
-        component.type === "container" ? "container-create" : "entity-path";
-      setContextMenu({
-        type: menuType,
-        componentId: component.id,
-        x: e.clientX,
-        y: e.clientY,
-      });
+      if (component.type === "container") {
+        setContextMenu({
+          type: "container-create",
+          componentId: component.id,
+          x: e.clientX,
+          y: e.clientY,
+        });
+      } else {
+        setContextMenu({
+          type: "entity-path",
+          componentId: component.id,
+          x: e.clientX,
+          y: e.clientY,
+        });
+      }
     };
 
     const cursorClass =

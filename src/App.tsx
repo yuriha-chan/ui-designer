@@ -38,6 +38,7 @@ import {
   deepCopy,
   generateSExpression,
 } from "./componentTree";
+import { buildEntityPathMap, type EntityPathMap } from "./entityPathMap";
 import { ComponentNode } from "./ComponentNode";
 import "./App.css";
 
@@ -158,6 +159,9 @@ function App() {
     propertyIndex: number;
   } | null>(null);
 
+  // Entity path map for efficient component lookups
+  const [entityPathMap, setEntityPathMap] = useState<EntityPathMap>(new Map());
+
   // 現在の画面のコンポーネントを取得するヘルパー関数
   const getCurrentComponents = useCallback((): UIComponent[] => {
     const currentScreen = screens.find(
@@ -179,6 +183,21 @@ function App() {
   useEffect(() => {
     historyIndexRef.current = historyIndex;
   }, [historyIndex]);
+
+  // Rebuild entity path map whenever entities or screens change
+  useEffect(() => {
+    const allComponents: UIComponent[] = [];
+    const collectComponents = (comps: UIComponent[]) => {
+      for (const comp of comps) {
+        allComponents.push(comp);
+        collectComponents(comp.children);
+      }
+    };
+    for (const screen of screens) {
+      collectComponents(screen.components);
+    }
+    setEntityPathMap(buildEntityPathMap(entities, allComponents));
+  }, [entities, screens]);
 
   // 現在の画面のコンポーネントを更新するヘルパー関数
   const updateCurrentScreenComponents = useCallback(
@@ -366,17 +385,87 @@ function App() {
     setEntities((prev) => prev.filter((_, i) => i !== entityIndex));
   }, []);
 
+  // Helper to update a single component's entity path if affected
+  const updateComponentEntityPath = (
+    comp: UIComponent,
+    affectedIds: Set<string>,
+    oldName: string,
+    newName: string
+  ): UIComponent => {
+    let updated = { ...comp };
+    if (affectedIds.has(comp.id) && comp.entityPath) {
+      updated.entityPath = comp.entityPath.replace(
+        new RegExp(`^${oldName}(>|$)`, "g"),
+        `${newName}$1`
+      );
+    }
+    if (comp.children.length > 0) {
+      updated.children = comp.children.map((child) =>
+        updateComponentEntityPath(child, affectedIds, oldName, newName)
+      );
+    }
+    return updated;
+  };
+
+  // Helper to update a component's entity path for property rename
+  const updateComponentEntityPathByPropertyRename = (
+    comp: UIComponent,
+    affectedIds: Set<string>,
+    oldPath: string,
+    newPath: string
+  ): UIComponent => {
+    let updated = { ...comp };
+    if (affectedIds.has(comp.id) && comp.entityPath) {
+      updated.entityPath = comp.entityPath.replace(oldPath, newPath);
+    }
+    if (comp.children.length > 0) {
+      updated.children = comp.children.map((child) =>
+        updateComponentEntityPathByPropertyRename(
+          child,
+          affectedIds,
+          oldPath,
+          newPath
+        )
+      );
+    }
+    return updated;
+  };
+
   const updateEntityName = useCallback(
     (entityIndex: number, newName: string) => {
+      const oldName = entities[entityIndex]?.name;
+      if (!oldName) return;
+
+      // Find all components affected by this entity rename using the map
+      const affectedComponentIds = new Set<string>();
+      for (const [key, ids] of entityPathMap) {
+        if (key === oldName || key.startsWith(`${oldName}>`)) {
+          ids.forEach((id) => affectedComponentIds.add(id));
+        }
+      }
+
+      // Update entity name in state
       setEntities((prev) =>
         prev.map((entity, i) =>
           i === entityIndex ? { ...entity, name: newName } : entity
         )
       );
-      // Update entity paths in components
-      updateAllEntityPaths(entityIndex, newName, null, null);
+
+      // Update affected components' entity paths
+      if (affectedComponentIds.size > 0) {
+        updateCurrentScreenComponents((comps) =>
+          comps.map((comp) =>
+            updateComponentEntityPath(
+              comp,
+              affectedComponentIds,
+              oldName,
+              newName
+            )
+          )
+        );
+      }
     },
-    []
+    [entities, entityPathMap, updateCurrentScreenComponents]
   );
 
   const addProperty = useCallback((entityIndex: number) => {
@@ -412,6 +501,17 @@ function App() {
     (entityIndex: number, propertyIndex: number, newName: string) => {
       const oldPropertyName =
         entities[entityIndex]?.properties[propertyIndex]?.name;
+      const entityName = entities[entityIndex]?.name;
+      if (!oldPropertyName || !entityName) return;
+
+      // Find all components affected by this property rename using the map
+      const affectedComponentIds = new Set<string>();
+      for (const [key, ids] of entityPathMap) {
+        if (key === `${entityName}>${oldPropertyName}`) {
+          ids.forEach((id) => affectedComponentIds.add(id));
+        }
+      }
+
       setEntities((prev) =>
         prev.map((entity, i) =>
           i === entityIndex
@@ -424,17 +524,24 @@ function App() {
             : entity
         )
       );
-      // Update entity paths in components
-      updateAllEntityPaths(
-        null,
-        null,
-        entityIndex,
-        propertyIndex,
-        oldPropertyName,
-        newName
-      );
+
+      // Update affected components' entity paths
+      if (affectedComponentIds.size > 0) {
+        const oldPath = `${entityName}>${oldPropertyName}`;
+        const newPath = `${entityName}>${newName}`;
+        updateCurrentScreenComponents((comps) =>
+          comps.map((comp) =>
+            updateComponentEntityPathByPropertyRename(
+              comp,
+              affectedComponentIds,
+              oldPath,
+              newPath
+            )
+          )
+        );
+      }
     },
-    [entities]
+    [entities, entityPathMap, updateCurrentScreenComponents]
   );
 
   const updatePropertyType = useCallback(
@@ -466,88 +573,6 @@ function App() {
     },
     []
   );
-
-  // Update entity paths across all components when entity/property names change
-  const updateAllEntityPaths = useCallback(
-    (
-      entityIndex: number | null,
-      newEntityName: string | null,
-      propertyEntityIndex: number | null,
-      propertyIndex: number | null,
-      oldPropertyName?: string,
-      newPropertyName?: string
-    ) => {
-      setScreens((prevScreens) => {
-        return prevScreens.map((screen) => ({
-          ...screen,
-          components: updateComponentsEntityPaths(
-            screen.components,
-            entityIndex,
-            newEntityName,
-            propertyEntityIndex,
-            propertyIndex,
-            oldPropertyName,
-            newPropertyName,
-            entities
-          ),
-        }));
-      });
-    },
-    [entities]
-  );
-
-  // Recursive function to update entity paths in components
-  const updateComponentsEntityPaths = (
-    components: UIComponent[],
-    entityIndex: number | null,
-    newEntityName: string | null,
-    propertyEntityIndex: number | null,
-    propertyIndex: number | null,
-    oldPropertyName: string | undefined,
-    newPropertyName: string | undefined,
-    currentEntities: Entity[]
-  ): UIComponent[] => {
-    return components.map((comp) => {
-      let newEntityPath = comp.entityPath;
-
-      if (newEntityPath && entityIndex !== null && newEntityName !== null) {
-        const oldEntityName = currentEntities[entityIndex]?.name;
-        if (oldEntityName && newEntityPath.startsWith(oldEntityName + ">")) {
-          newEntityPath = newEntityPath.replace(oldEntityName, newEntityName);
-        }
-      }
-
-      if (
-        newEntityPath &&
-        propertyEntityIndex !== null &&
-        propertyIndex !== null &&
-        oldPropertyName &&
-        newPropertyName
-      ) {
-        const entityName = currentEntities[propertyEntityIndex]?.name;
-        const oldPath = `${entityName}>${oldPropertyName}`;
-        const newPath = `${entityName}>${newPropertyName}`;
-        if (newEntityPath.startsWith(oldPath)) {
-          newEntityPath = newEntityPath.replace(oldPath, newPath);
-        }
-      }
-
-      return {
-        ...comp,
-        entityPath: newEntityPath,
-        children: updateComponentsEntityPaths(
-          comp.children,
-          entityIndex,
-          newEntityName,
-          propertyEntityIndex,
-          propertyIndex,
-          oldPropertyName,
-          newPropertyName,
-          currentEntities
-        ),
-      };
-    });
-  };
 
   // Auto-recovery: Load from localStorage on mount
   useEffect(() => {
@@ -935,7 +960,9 @@ function App() {
     const placeholderOptions =
       componentType === "button" || componentType === undefined
         ? ["OK", "Cancel", "Select", "Delete", "New", "..."]
-        : ["..."];
+        : componentType === "number"
+          ? ["12...", "..."]
+          : ["..."];
 
     const handleValueChange = (details: { value: string[] }) => {
       const value = details.value;
@@ -1240,8 +1267,15 @@ function App() {
   const handleEntityPathSelect = (entityPath: string) => {
     if (!contextMenu) return;
     const { componentId, pendingComponentType } = contextMenu;
+
+    // Check if component already exists at this ID (right-clicked to UPDATE)
+    const existingComponent = findComponent(
+      getCurrentComponents(),
+      componentId
+    );
+
     if (pendingComponentType) {
-      // Only auto-determine type for text/number, keep button/input as-is
+      // CREATE a NEW component (pendingComponentType means we're in create flow)
       if (
         pendingComponentType === "text" ||
         pendingComponentType === "number"
@@ -1252,16 +1286,13 @@ function App() {
       } else {
         addComponentToContainer(componentId, pendingComponentType, entityPath);
       }
-    } else {
-      // Auto-update component type based on entity path (only for text/number)
+    } else if (existingComponent) {
+      // UPDATE existing component (right-clicked to change entity path, no pending type)
       updateEntityPath(componentId, entityPath);
       const propertyType = getPropertyTypeFromPath(entityPath);
-      const currentComponent = getCurrentComponents().find(
-        (c) => c.id === componentId
-      );
       if (
-        currentComponent &&
-        (currentComponent.type === "text" || currentComponent.type === "number")
+        existingComponent.type === "text" ||
+        existingComponent.type === "number"
       ) {
         const componentType = propertyType === "number" ? "number" : "text";
         setScreens((prev) =>
@@ -1906,16 +1937,41 @@ function App() {
                 )}
               </Box>
             </Box>
-            {contextMenu && contextMenu.type === "entity-path" && (
-              <EntityPathMenu
-                entities={entities}
-                onSelect={handleEntityPathSelect}
-                onClose={() => setContextMenu(null)}
-                x={contextMenu.x}
-                y={contextMenu.y}
-                componentType={contextMenu.pendingComponentType}
-              />
-            )}
+            {contextMenu &&
+              contextMenu.type === "entity-path" &&
+              (() => {
+                let componentType:
+                  | "text"
+                  | "number"
+                  | "button"
+                  | "input"
+                  | undefined;
+                if (contextMenu.pendingComponentType) {
+                  // CREATE flow: use the pending type
+                  componentType = contextMenu.pendingComponentType;
+                } else {
+                  // UPDATE flow: look up existing component's type
+                  const existingComp = getCurrentComponents().find(
+                    (c) => c.id === contextMenu.componentId
+                  );
+                  componentType = existingComp?.type as
+                    | "text"
+                    | "number"
+                    | "button"
+                    | "input"
+                    | undefined;
+                }
+                return (
+                  <EntityPathMenu
+                    entities={entities}
+                    onSelect={handleEntityPathSelect}
+                    onClose={() => setContextMenu(null)}
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    componentType={componentType}
+                  />
+                );
+              })()}
             {contextMenu && contextMenu.type === "container-create" && (
               <ContainerContextMenu
                 onSelect={handleComponentCreate}
