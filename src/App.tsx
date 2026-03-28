@@ -124,6 +124,7 @@ function App() {
       { label: "string", value: "string" },
       { label: "number", value: "number" },
       { label: "entity", value: "entity" },
+      { label: "function", value: "function" },
     ],
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1597,6 +1598,17 @@ function App() {
                                       <Box
                                         as="span"
                                         className={`type-select type-${prop.type}`}
+                                        color={
+                                          prop.type === "string"
+                                            ? "blue.500"
+                                            : prop.type === "number"
+                                              ? "green.500"
+                                              : prop.type === "entity"
+                                                ? "orange.500"
+                                                : prop.type === "function"
+                                                  ? "purple.500"
+                                                  : "inherit"
+                                        }
                                       >
                                         <Select.Root
                                           size="xs"
@@ -1607,7 +1619,8 @@ function App() {
                                             const newType = details.value[0] as
                                               | "string"
                                               | "number"
-                                              | "entity";
+                                              | "entity"
+                                              | "function";
                                             const defaultEntityType =
                                               entities.find(
                                                 (en) => en.name !== entity.name

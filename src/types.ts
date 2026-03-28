@@ -1,5 +1,5 @@
 // エンティティプロパティ定義
-export type PropertyType = "string" | "number" | "entity";
+export type PropertyType = "string" | "number" | "entity" | "function";
 
 export interface EntityProperty {
   name: string;
