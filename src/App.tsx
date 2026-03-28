@@ -893,6 +893,12 @@ function App() {
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
     const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
 
+    const MENU_MAX_HEIGHT = 400;
+    const MENU_THRESHOLD = 200;
+    const isNearBottom = y > MENU_THRESHOLD;
+    const menuTop = isNearBottom ? undefined : y;
+    const menuBottom = isNearBottom ? window.innerHeight - y : undefined;
+
     const findEntity = (name: string) => entities.find((e) => e.name === name);
 
     const handleValueChange = (details: { value: string[] }) => {
@@ -989,8 +995,11 @@ function App() {
         className="context-menu entity-path-menu"
         position="fixed"
         left={x}
-        top={y}
+        top={menuTop}
+        bottom={menuBottom}
         zIndex={1000}
+        maxH={MENU_MAX_HEIGHT}
+        overflowY="auto"
       >
         <Flex
           className="menu-header"
@@ -1062,12 +1071,18 @@ function App() {
     x: number;
     y: number;
   }> = ({ onSelect, onClose, x, y }) => {
+    const MENU_THRESHOLD = 200;
+    const isNearBottom = y > MENU_THRESHOLD;
+    const menuTop = isNearBottom ? undefined : y;
+    const menuBottom = isNearBottom ? window.innerHeight - y : undefined;
+
     return (
       <Box
         className="context-menu container-context-menu"
         position="fixed"
         left={x}
-        top={y}
+        top={menuTop}
+        bottom={menuBottom}
         zIndex={1000}
       >
         <Flex
