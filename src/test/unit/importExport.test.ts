@@ -5,6 +5,8 @@ import {
   exportStoryboard,
   importDesign,
   validateDesignData,
+  exportDesignAsLLMText,
+  exportStoryboardAsLLMText,
 } from "../../importExport";
 import {
   simpleTree,
@@ -15,7 +17,7 @@ import {
   emptyTree,
   singleComponentTree,
 } from "../../../__fixtures__/componentTrees";
-import { allEntities } from "../../../__fixtures__/entities";
+import { allEntities, accountEntity } from "../../../__fixtures__/entities";
 
 describe("exportDesign", () => {
   it("exports simple tree with entities", () => {
@@ -219,5 +221,75 @@ describe("importDesign storyboard", () => {
       expect(result.screens).toEqual(screens);
       expect(result.entities).toEqual(entities);
     }
+  });
+});
+
+describe("exportDesignAsLLMText", () => {
+  it("exports simple tree as markdown", () => {
+    const components = simpleTree;
+    const entities = allEntities;
+    const text = exportDesignAsLLMText(components, entities);
+
+    expect(text).toContain("# UI Design Export");
+    expect(text).toContain("## Entities");
+    expect(text).toContain("### Account");
+    expect(text).toContain("- Name: string");
+    expect(text).toContain("## Components");
+    expect(text).toContain("container");
+    expect(text).toContain("text (Account>Name)");
+  });
+
+  it("exports empty tree", () => {
+    const components: UIComponent[] = [];
+    const entities: Entity[] = [];
+    const text = exportDesignAsLLMText(components, entities);
+
+    expect(text).toContain("# UI Design Export");
+    expect(text).not.toContain("## Entities");
+    expect(text).not.toContain("## Components");
+  });
+
+  it("exports button with target screen", () => {
+    const components: UIComponent[] = [
+      {
+        id: "btn1",
+        type: "button",
+        entityPath: "Account>Submit",
+        targetScreen: "screen2",
+        children: [],
+      },
+    ];
+    const entities = [accountEntity];
+    const text = exportDesignAsLLMText(components, entities);
+
+    expect(text).toContain('button (Account>Submit) → "screen2"');
+  });
+});
+
+describe("exportStoryboardAsLLMText", () => {
+  it("exports screens as markdown", () => {
+    const screens: Screen[] = [
+      { id: "1", name: "Main", components: simpleTree },
+      { id: "2", name: "Settings", components: emptyTree },
+    ];
+    const entities = allEntities;
+    const text = exportStoryboardAsLLMText(screens, entities);
+
+    expect(text).toContain("# UI Design Export");
+    expect(text).toContain("## Entities");
+    expect(text).toContain("## Screen: Main");
+    expect(text).toContain("container");
+    expect(text).toContain("## Screen: Settings");
+    expect(text).toContain("(empty)");
+  });
+
+  it("exports empty storyboard", () => {
+    const screens: Screen[] = [];
+    const entities: Entity[] = [];
+    const text = exportStoryboardAsLLMText(screens, entities);
+
+    expect(text).toContain("# UI Design Export");
+    expect(text).not.toContain("## Entities");
+    expect(text).not.toContain("## Screen:");
   });
 });

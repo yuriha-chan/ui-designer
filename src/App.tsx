@@ -10,7 +10,13 @@ import {
   ComponentType,
 } from "./types";
 import { DragManager } from "./DragManager";
-import { exportDesign, exportStoryboard, importDesign } from "./importExport";
+import {
+  exportDesign,
+  exportStoryboard,
+  importDesign,
+  exportDesignAsLLMText,
+  exportStoryboardAsLLMText,
+} from "./importExport";
 import { saveToStorage, loadFromStorage } from "./storage";
 import {
   ChakraProvider,
@@ -125,6 +131,7 @@ function App() {
   const [exportMode, setExportMode] = useState<"screen" | "storyboard">(
     "screen"
   );
+  const [exportFormat, setExportFormat] = useState<"json" | "llm-text">("json");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contextMenu = useContextMenuState();
@@ -820,23 +827,40 @@ function App() {
   );
 
   const handleExport = useCallback(() => {
-    let json: string;
-    if (exportMode === "screen") {
-      const currentComponents = getCurrentComponents();
-      json = exportDesign(currentComponents, entities);
+    let content: string;
+    let filename: string;
+    let mimeType: string;
+
+    if (exportFormat === "llm-text") {
+      if (exportMode === "screen") {
+        const currentComponents = getCurrentComponents();
+        content = exportDesignAsLLMText(currentComponents, entities);
+      } else {
+        content = exportStoryboardAsLLMText(screens, entities);
+      }
+      filename = "design.md";
+      mimeType = "text/markdown";
     } else {
-      json = exportStoryboard(screens, entities);
+      if (exportMode === "screen") {
+        const currentComponents = getCurrentComponents();
+        content = exportDesign(currentComponents, entities);
+      } else {
+        content = exportStoryboard(screens, entities);
+      }
+      filename = "design.json";
+      mimeType = "application/json";
     }
-    const blob = new Blob([json], { type: "application/json" });
+
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "design.json";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [getCurrentComponents, entities, screens, exportMode]);
+  }, [getCurrentComponents, entities, screens, exportMode, exportFormat]);
 
   const handleImport = useCallback(() => {
     if (fileInputRef.current) {
@@ -1110,6 +1134,18 @@ function App() {
                     >
                       <option value="screen">Current Screen</option>
                       <option value="storyboard">Storyboard</option>
+                    </NativeSelect.Field>
+                    <NativeSelect.Indicator />
+                  </NativeSelect.Root>
+                  <NativeSelect.Root size="sm" width="auto">
+                    <NativeSelect.Field
+                      value={exportFormat}
+                      onChange={(e) =>
+                        setExportFormat(e.target.value as "json" | "llm-text")
+                      }
+                    >
+                      <option value="json">JSON</option>
+                      <option value="llm-text">LLM Text</option>
                     </NativeSelect.Field>
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>

@@ -325,7 +325,7 @@ const ComponentNode: React.FC<{
     );
   },
   (prev, next) =>
-    ["component", "depth", "parentId", "previewModw"].every(
+    ["component", "depth", "parentId", "previewMode"].every(
       (k) => prev[k as keyof typeof prev] === next[k as keyof typeof prev]
     )
 );
