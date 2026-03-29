@@ -5,6 +5,7 @@ import { UIComponent, Entity, Screen } from "./types";
 import { DragItem, ItemTypes, DropResult } from "./dnd";
 import { dragStore, useDragSelector } from "./dragStore";
 import { DragContext } from "./DragManager";
+import { useContextMenuDispatch } from "./ContextMenuContext";
 import {
   getColorForComponent,
   sortComponentsBySExpression,
@@ -24,16 +25,6 @@ const ComponentNode: React.FC<{
   onButtonClick?: (id: string) => void;
   onMoveComponent: (draggedId: string, targetId: string) => void;
   isDescendant: (parentId: string, childId: string) => boolean;
-  setContextMenu: (
-    menu: {
-      type: "entity-path" | "container-create";
-      componentId: string;
-      x: number;
-      y: number;
-      pendingComponentType?: "text" | "number" | "button" | "input";
-      isUpdate?: boolean;
-    } | null
-  ) => void;
   previewMode?: boolean;
 }> = React.memo(
   ({
@@ -49,9 +40,9 @@ const ComponentNode: React.FC<{
     onButtonClick,
     onMoveComponent,
     isDescendant,
-    setContextMenu,
     previewMode = false,
   }) => {
+    const setContextMenu = useContextMenuDispatch();
     const color = getColorForComponent(component.type, depth);
     const { entity, property, pathParts } = parseEntityPath(
       component.entityPath
@@ -61,12 +52,7 @@ const ComponentNode: React.FC<{
       : null;
 
     useEffect(() => {
-      console.log(
-        `ComponentNode ${component.id} mounted, type=${component.type}, parentId=${parentId || "root"}`
-      );
-      return () => {
-        console.log(`ComponentNode ${component.id} unmounted`);
-      };
+      return;
     }, [component.id, component.type, parentId]);
 
     const { setRawDropTargetId } = useContext(DragContext)!;
@@ -76,9 +62,6 @@ const ComponentNode: React.FC<{
       () => ({
         type: ItemTypes.COMPONENT,
         item: () => {
-          console.log(
-            `ComponentNode ${component.id}: drag item created, actual parentId=${parentId || "none"}`
-          );
           return {
             type: ItemTypes.COMPONENT,
             component,
@@ -90,21 +73,8 @@ const ComponentNode: React.FC<{
         }),
         end: (item, monitor) => {
           const dropResult = monitor.getDropResult<DropResult>();
-          console.log(
-            `ComponentNode ${component.id}: drag end, dropResult=`,
-            dropResult,
-            "item=",
-            item
-          );
           if (dropResult && dropResult.dropped) {
-            console.log(
-              `ComponentNode ${component.id}: moving component to target ${dropResult.targetId}`
-            );
             onMoveComponent(item.component.id, dropResult.targetId);
-          } else {
-            console.log(
-              `ComponentNode ${component.id}: dropResult invalid or missing`
-            );
           }
           setRawDropTargetId(null);
         },
@@ -121,35 +91,21 @@ const ComponentNode: React.FC<{
         accept: ItemTypes.COMPONENT,
         canDrop: (item) => {
           if (previewMode) return false;
-          // Prevent dragging a container into its own descendant
           if (
             item.component.type === "container" &&
             isDescendant(item.component.id, component.id)
           ) {
-            console.log(
-              `ComponentNode ${component.id}: canDrop false - would create cycle (descendant)`
-            );
             return false;
           }
 
-          // For non-container components, allow drop only if they have a parent (will route to parent)
           if (!isContainer) {
             if (!parentId) {
-              console.log(
-                `ComponentNode ${component.id}: canDrop false - non-container has no parent`
-              );
               return false;
             }
-            console.log(
-              `ComponentNode ${component.id}: canDrop true - non-container will route to parent ${parentId}`
-            );
             return true;
           }
 
           if (item.component.id === component.id) {
-            console.log(
-              `ComponentNode ${component.id}: canDrop false - dropping onto itself`
-            );
             return false;
           }
 
@@ -160,21 +116,14 @@ const ComponentNode: React.FC<{
           if (previewMode) return;
           if (monitor.isOver({ shallow: true })) {
             let targetId = component.id;
-            // For non-containers, route hover to parent
             if (!isContainer && parentId) {
               targetId = parentId;
             }
-            console.log(
-              `ComponentNode ${component.id}: setting currentDropTargetId=${targetId}`
-            );
             setRawDropTargetId(targetId);
           }
         },
-        drop: (item: DragItem) => {
+        drop: (_item: DragItem) => {
           if (previewMode) return undefined;
-          console.log(
-            `ComponentNode ${component.id}: drop called for item ${item.component.id}`
-          );
           return {
             dropped: true,
             targetId: dragStore.getState().currentDropTargetId,
@@ -191,13 +140,10 @@ const ComponentNode: React.FC<{
     // Combined ref for drag and drop
     const dragDropRef = useCallback(
       (el: HTMLDivElement | null) => {
-        console.log(
-          `ComponentNode ${component.id}: dragDropRef called with el=${el ? "HTMLDivElement" : "null"}`
-        );
         dragRef(el);
         dropRef(el);
       },
-      [dragRef, dropRef, component.id]
+      [dragRef, dropRef]
     );
 
     const isOver = useDragSelector(
@@ -369,7 +315,6 @@ const ComponentNode: React.FC<{
                   onButtonClick={onButtonClick}
                   onMoveComponent={onMoveComponent}
                   isDescendant={isDescendant}
-                  setContextMenu={setContextMenu}
                   previewMode={previewMode}
                 />
               ))}
@@ -380,8 +325,7 @@ const ComponentNode: React.FC<{
     );
   },
   (prev, next) =>
-    prev === next ||
-    Object.keys(prev).every(
+    ["component", "depth", "parentId", "previewModw"].every(
       (k) => prev[k as keyof typeof prev] === next[k as keyof typeof prev]
     )
 );

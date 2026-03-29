@@ -1,13 +1,17 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen } from "./test-utils";
 import userEvent from "@testing-library/user-event";
 import { ComponentNode } from "../../ComponentNode";
 import { sortComponentsBySExpression } from "../../componentTree";
 import { simpleTree } from "../../../__fixtures__/componentTrees";
 import { allEntities } from "../../../__fixtures__/entities";
+import * as ContextMenuContextModule from "../../ContextMenuContext";
 
-// Mock console.log to keep test output clean
 vi.spyOn(console, "log").mockImplementation(() => {});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("ComponentNode", () => {
   const defaultProps = {
@@ -22,7 +26,6 @@ describe("ComponentNode", () => {
     onButtonClick: vi.fn(),
     onMoveComponent: vi.fn(),
     isDescendant: vi.fn().mockReturnValue(false),
-    setContextMenu: vi.fn(),
     previewMode: false,
   };
 
@@ -122,12 +125,17 @@ describe("ComponentNode", () => {
     const leafComponent = simpleTree[0].children[0];
     const mockSetContextMenu = vi.fn();
     const user = userEvent.setup();
+
+    vi.spyOn(
+      ContextMenuContextModule,
+      "useContextMenuDispatch"
+    ).mockReturnValue(mockSetContextMenu);
+
     const { container } = render(
       <ComponentNode
         {...defaultProps}
         component={leafComponent}
         parentId={simpleTree[0].id}
-        setContextMenu={mockSetContextMenu}
       />
     );
 
@@ -137,7 +145,7 @@ describe("ComponentNode", () => {
     await user.pointer({ target: componentBox, keys: "[MouseRight]" });
 
     expect(mockSetContextMenu).toHaveBeenCalledWith({
-      type: "entity-path", // leaf component
+      type: "entity-path",
       componentId: leafComponent.id,
       x: expect.any(Number),
       y: expect.any(Number),
@@ -149,9 +157,13 @@ describe("ComponentNode", () => {
   it("opens container-create context menu for container", async () => {
     const mockSetContextMenu = vi.fn();
     const user = userEvent.setup();
-    const { container } = render(
-      <ComponentNode {...defaultProps} setContextMenu={mockSetContextMenu} />
-    );
+
+    vi.spyOn(
+      ContextMenuContextModule,
+      "useContextMenuDispatch"
+    ).mockReturnValue(mockSetContextMenu);
+
+    const { container } = render(<ComponentNode {...defaultProps} />);
 
     const componentBox = container.querySelector(
       ".component-box"
@@ -159,7 +171,7 @@ describe("ComponentNode", () => {
     await user.pointer({ target: componentBox, keys: "[MouseRight]" });
 
     expect(mockSetContextMenu).toHaveBeenCalledWith({
-      type: "container-create", // container component
+      type: "container-create",
       componentId: simpleTree[0].id,
       x: expect.any(Number),
       y: expect.any(Number),

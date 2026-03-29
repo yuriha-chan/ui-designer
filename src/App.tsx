@@ -37,6 +37,10 @@ import { EntityPathMenu } from "./components/EntityPathMenu";
 import { ContainerContextMenu } from "./components/ContainerContextMenu";
 import { EntitiesPanel } from "./components/EntitiesPanel";
 import { ScreensPanel } from "./components/ScreensPanel";
+import {
+  useContextMenuState,
+  useContextMenuDispatch,
+} from "./ContextMenuContext";
 import "./App.css";
 
 // サンプルエンティティ定義
@@ -123,15 +127,8 @@ function App() {
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  type ContextMenuType = "entity-path" | "container-create";
-  const [contextMenu, setContextMenu] = useState<{
-    type: ContextMenuType;
-    componentId: string;
-    x: number;
-    y: number;
-    pendingComponentType?: "text" | "number" | "button" | "input"; // エンティティパス選択待ちのコンポーネントタイプ
-    isUpdate?: boolean; // true when editing existing component
-  } | null>(null);
+  const contextMenu = useContextMenuState();
+  const setContextMenu = useContextMenuDispatch();
 
   // Entity editing state
   const [editingEntityIndex, setEditingEntityIndex] = useState<number | null>(
@@ -385,24 +382,49 @@ function App() {
     return updated;
   };
 
-  // Helper to update a component's entity path for property rename
   const updateComponentEntityPathByPropertyRename = (
     comp: UIComponent,
     affectedIds: Set<string>,
-    oldPath: string,
-    newPath: string
+    targetEntityName: string,
+    oldPropertyName: string,
+    newPropertyName: string
   ): UIComponent => {
     let updated = { ...comp };
     if (affectedIds.has(comp.id) && comp.entityPath) {
-      updated.entityPath = comp.entityPath.replace(oldPath, newPath);
+      const parts = comp.entityPath.split(">");
+      let currentEntityName = parts[0];
+      const newParts: string[] = [parts[0]];
+
+      for (let i = 1; i < parts.length; i++) {
+        const part = parts[i];
+        const currentEntity = entities.find(
+          (e) => e.name === currentEntityName
+        );
+        const property = currentEntity?.properties.find((p) => p.name === part);
+
+        if (
+          currentEntityName === targetEntityName &&
+          part === oldPropertyName
+        ) {
+          newParts.push(newPropertyName);
+        } else {
+          newParts.push(part);
+        }
+
+        if (property?.type === "entity" && property.entity_type) {
+          currentEntityName = property.entity_type;
+        }
+      }
+      updated.entityPath = newParts.join(">");
     }
     if (comp.children.length > 0) {
       updated.children = comp.children.map((child) =>
         updateComponentEntityPathByPropertyRename(
           child,
           affectedIds,
-          oldPath,
-          newPath
+          targetEntityName,
+          oldPropertyName,
+          newPropertyName
         )
       );
     }
@@ -416,10 +438,10 @@ function App() {
 
       // Find all components affected by this entity rename using the map
       const affectedComponentIds = new Set<string>();
-      for (const [key, ids] of entityPathMap) {
-        if (key === oldName || key.startsWith(`${oldName}>`)) {
-          ids.forEach((id) => affectedComponentIds.add(id));
-        }
+      const entity = entities[entityIndex];
+      for (const prop of entity.properties) {
+        const ids = entityPathMap.get(`${oldName}>${prop.name}`);
+        ids?.forEach((id) => affectedComponentIds.add(id));
       }
 
       // Update entity name in state
@@ -487,11 +509,9 @@ function App() {
 
       // Find all components affected by this property rename using the map
       const affectedComponentIds = new Set<string>();
-      for (const [key, ids] of entityPathMap) {
-        if (key === `${entityName}>${oldPropertyName}`) {
-          ids.forEach((id) => affectedComponentIds.add(id));
-        }
-      }
+      const ids = entityPathMap.get(`${entityName}>${oldPropertyName}`);
+      console.log("affected", ids.length);
+      ids?.forEach((id) => affectedComponentIds.add(id));
 
       setEntities((prev) =>
         prev.map((entity, i) =>
@@ -506,10 +526,7 @@ function App() {
         )
       );
 
-      // Update affected components' entity paths in ALL screens
       if (affectedComponentIds.size > 0) {
-        const oldPath = `${entityName}>${oldPropertyName}`;
-        const newPath = `${entityName}>${newName}`;
         setScreens((prevScreens) =>
           prevScreens.map((screen) => ({
             ...screen,
@@ -517,8 +534,9 @@ function App() {
               updateComponentEntityPathByPropertyRename(
                 comp,
                 affectedComponentIds,
-                oldPath,
-                newPath
+                entityName,
+                oldPropertyName,
+                newName
               )
             ),
           }))
@@ -636,48 +654,29 @@ function App() {
 
   const moveComponent = useCallback(
     (draggedId: string, targetId: string) => {
-      console.log(
-        `moveComponent: draggedId=${draggedId}, targetId=${targetId}`
-      );
-
       const insertAt = (
         comps: UIComponent[],
         targetId: string,
         node: UIComponent
       ): UIComponent[] => {
-        console.log(
-          `insertAt: targetId=${targetId}, comps length=${comps.length}`
-        );
         return comps.map((comp) => {
           if (comp.id === targetId) {
-            console.log(`insertAt: found target comp ${comp.id}`);
-            console.log(
-              `insertAt: adding node to children, current children count=${comp.children.length}`
-            );
             return { ...comp, children: [...comp.children, node] };
           }
           return { ...comp, children: insertAt(comp.children, targetId, node) };
         });
       };
 
-      // 現在のコンポーネントを取得
       const currentComponents = getCurrentComponents();
 
-      // ドラッグされたコンポーネントを探して削除
       const { node, newComps } = findAndRemove(currentComponents, draggedId);
       if (!node) {
-        console.log(`moveComponent: node not found for draggedId ${draggedId}`);
         return;
       }
-      console.log(
-        `moveComponent: node found, newComps length=${newComps.length}`
-      );
 
-      // ターゲットに挿入
       let updatedComps = newComps;
       updatedComps = insertAt(newComps, targetId, node);
 
-      console.log(`moveComponent: setting components`);
       updateCurrentScreenComponents(() => updatedComps);
     },
     [getCurrentComponents, updateCurrentScreenComponents]
@@ -740,7 +739,6 @@ function App() {
       type: "container" | "text" | "number" | "button" | "input",
       entityPath?: string
     ) => {
-      console.log("addComponentToContainer", { containerId, type, entityPath });
       const newComponent: UIComponent = {
         id: uuidv4(),
         type,
@@ -1182,7 +1180,6 @@ function App() {
                         onButtonClick={handleButtonClick}
                         onMoveComponent={moveComponent}
                         isDescendant={isDescendant}
-                        setContextMenu={setContextMenu}
                         previewMode={previewMode}
                       />
                     )

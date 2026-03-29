@@ -20,6 +20,7 @@ export function buildEntityPathMap(
     for (let i = 1; i < parts.length; i++) {
       const propertyName = parts[i];
       const key = `${currentEntityName}>${propertyName}`;
+      console.log("registering", key)
 
       if (!map.has(key)) {
         map.set(key, new Set());

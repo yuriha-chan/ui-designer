@@ -4,12 +4,15 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { render, RenderOptions } from "@testing-library/react";
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { DragManager } from "../../DragManager";
+import { ContextMenuProvider } from "../../ContextMenuContext";
 
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <DndProvider backend={HTML5Backend}>
       <ChakraProvider value={defaultSystem}>
-        <DragManager>{children}</DragManager>
+        <DragManager>
+          <ContextMenuProvider>{children}</ContextMenuProvider>
+        </DragManager>
       </ChakraProvider>
     </DndProvider>
   );
