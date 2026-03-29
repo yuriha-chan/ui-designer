@@ -510,7 +510,6 @@ function App() {
       // Find all components affected by this property rename using the map
       const affectedComponentIds = new Set<string>();
       const ids = entityPathMap.get(`${entityName}>${oldPropertyName}`);
-      console.log("affected", ids.length);
       ids?.forEach((id) => affectedComponentIds.add(id));
 
       setEntities((prev) =>
