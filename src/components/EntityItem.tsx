@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   Box,
   VStack,
@@ -10,15 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { createListCollection } from "@chakra-ui/react";
 import { Entity, PropertyType } from "../types";
-
-const propertyTypeCollection = createListCollection({
-  items: [
-    { label: "string", value: "string" },
-    { label: "number", value: "number" },
-    { label: "entity", value: "entity" },
-    { label: "function", value: "function" },
-  ],
-});
+import { useI18n } from "../I18nContext";
 
 const propertyTypeColors: Record<PropertyType, string> = {
   string: "blue.500",
@@ -73,6 +65,19 @@ const EntityItemInner: React.FC<EntityItemProps> = ({
   updatePropertyType,
   deleteEntity,
 }) => {
+  const { t } = useI18n();
+  const propertyTypeCollection = useMemo(
+    () =>
+      createListCollection({
+        items: [
+          { label: t("propertyTypes.string"), value: "string" },
+          { label: t("propertyTypes.number"), value: "number" },
+          { label: t("propertyTypes.entity"), value: "entity" },
+          { label: t("propertyTypes.function"), value: "function" },
+        ],
+      }),
+    [t]
+  );
   const handleEntityNameBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       if (e.target.value.trim()) {
@@ -130,18 +135,24 @@ const EntityItemInner: React.FC<EntityItemProps> = ({
   );
 
   const handleDeleteEntity = useCallback(() => {
-    if (window.confirm(`Delete entity "${entity.name}"?`)) {
+    if (
+      window.confirm(t("entity.deleteConfirm").replace("{name}", entity.name))
+    ) {
       deleteEntity(entityIndex);
     }
-  }, [entityIndex, entity.name, deleteEntity]);
+  }, [entityIndex, entity.name, deleteEntity, t]);
 
   const handleDeleteProperty = useCallback(
     (propIndex: number, propName: string) => {
-      if (window.confirm(`Delete property "${propName}"?`)) {
+      if (
+        window.confirm(
+          t("entity.deletePropertyConfirm").replace("{name}", propName)
+        )
+      ) {
         deleteProperty(entityIndex, propIndex);
       }
     },
-    [entityIndex, deleteProperty]
+    [entityIndex, deleteProperty, t]
   );
 
   const handleTypeChange = useCallback(
@@ -194,7 +205,7 @@ const EntityItemInner: React.FC<EntityItemProps> = ({
             color="white"
             _hover={{ bg: "green.600" }}
             onClick={() => addProperty(entityIndex)}
-            title="Add property"
+            title={t("entity.addProperty")}
           >
             +
           </Button>
@@ -205,7 +216,7 @@ const EntityItemInner: React.FC<EntityItemProps> = ({
             _hover={{ bg: "red.600" }}
             className="delete-entity-btn"
             onClick={handleDeleteEntity}
-            title="Delete entity"
+            title={t("entity.deleteEntity")}
           >
             ×
           </Button>
@@ -303,7 +314,7 @@ const EntityItemInner: React.FC<EntityItemProps> = ({
               ml={1}
               className="delete-property-btn"
               onClick={() => handleDeleteProperty(propIndex, prop.name)}
-              title="Delete property"
+              title={t("entity.deleteProperty")}
             >
               ×
             </Button>

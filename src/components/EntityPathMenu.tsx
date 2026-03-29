@@ -8,6 +8,7 @@ import {
   CloseButton,
 } from "@chakra-ui/react";
 import { Entity, EntityProperty } from "../types";
+import { useI18n } from "../I18nContext";
 
 interface EntityPathMenuProps {
   entities: Entity[];
@@ -26,6 +27,7 @@ const EntityPathMenu: React.FC<EntityPathMenuProps> = ({
   y,
   componentType,
 }) => {
+  const { t } = useI18n();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
 
@@ -38,7 +40,14 @@ const EntityPathMenu: React.FC<EntityPathMenuProps> = ({
 
   const placeholderOptions =
     componentType === "button" || componentType === undefined
-      ? ["OK", "Cancel", "Select", "Delete", "New", "..."]
+      ? [
+          t("placeholder.ok"),
+          t("placeholder.cancel"),
+          t("placeholder.select"),
+          t("placeholder.delete"),
+          t("placeholder.new"),
+          "...",
+        ]
       : componentType === "number"
         ? ["12..."]
         : ["..."];
@@ -155,7 +164,7 @@ const EntityPathMenu: React.FC<EntityPathMenuProps> = ({
         p={4}
       >
         <Text fontSize="lg" fontWeight="bold">
-          Select Entity Path
+          {t("contextMenu.selectEntityPath")}
         </Text>
         <CloseButton onClick={onClose} />
       </Flex>

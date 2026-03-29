@@ -47,81 +47,121 @@ import {
   useContextMenuState,
   useContextMenuDispatch,
 } from "./ContextMenuContext";
+import { useI18n, type Language } from "./I18nContext";
 import "./App.css";
 
-// サンプルエンティティ定義
-const sampleEntities: Entity[] = [
-  {
-    name: "Account",
-    properties: [
-      { name: "Name", type: "string" },
-      { name: "Email", type: "string" },
-      { name: "Balance", type: "number" },
-      { name: "Status", type: "string" },
-    ],
-  },
-  {
-    name: "Product",
-    properties: [
-      { name: "Title", type: "string" },
-      { name: "Price", type: "number" },
-      { name: "Stock", type: "number" },
-      { name: "Category", type: "string" },
-    ],
-  },
-  {
-    name: "Order",
-    properties: [
-      { name: "ID", type: "string" },
-      { name: "Date", type: "string" },
-      { name: "Total", type: "number" },
-      { name: "Status", type: "string" },
-    ],
-  },
-  {
-    name: "User",
-    properties: [
-      { name: "Username", type: "string" },
-      { name: "Role", type: "string" },
-      { name: "LastLogin", type: "string" },
-    ],
-  },
-];
+function getSampleEntities(lang: Language): Entity[] {
+  if (lang === "ja") {
+    return [
+      {
+        name: "アカウント",
+        properties: [
+          { name: "名前", type: "string" },
+          { name: "メール", type: "string" },
+          { name: "残高", type: "number" },
+          { name: "ステータス", type: "string" },
+        ],
+      },
+      {
+        name: "商品",
+        properties: [
+          { name: "タイトル", type: "string" },
+          { name: "価格", type: "number" },
+          { name: "在庫", type: "number" },
+          { name: "カテゴリ", type: "string" },
+        ],
+      },
+      {
+        name: "注文",
+        properties: [
+          { name: "ID", type: "string" },
+          { name: "日付", type: "string" },
+          { name: "合計", type: "number" },
+          { name: "ステータス", type: "string" },
+        ],
+      },
+      {
+        name: "ユーザー",
+        properties: [
+          { name: "ユーザー名", type: "string" },
+          { name: "役割", type: "string" },
+          { name: "最終ログイン", type: "string" },
+        ],
+      },
+    ];
+  }
+  return [
+    {
+      name: "Account",
+      properties: [
+        { name: "Name", type: "string" },
+        { name: "Email", type: "string" },
+        { name: "Balance", type: "number" },
+        { name: "Status", type: "string" },
+      ],
+    },
+    {
+      name: "Product",
+      properties: [
+        { name: "Title", type: "string" },
+        { name: "Price", type: "number" },
+        { name: "Stock", type: "number" },
+        { name: "Category", type: "string" },
+      ],
+    },
+    {
+      name: "Order",
+      properties: [
+        { name: "ID", type: "string" },
+        { name: "Date", type: "string" },
+        { name: "Total", type: "number" },
+        { name: "Status", type: "string" },
+      ],
+    },
+    {
+      name: "User",
+      properties: [
+        { name: "Username", type: "string" },
+        { name: "Role", type: "string" },
+        { name: "LastLogin", type: "string" },
+      ],
+    },
+  ];
+}
 
-// 初期データ
-const initialComponents: UIComponent[] = [
-  {
-    id: "root",
-    type: "container",
-    children: [],
-  },
-];
-
-// 初期画面データ
-const initialScreen: Screen = {
-  id: uuidv4(),
-  name: "メイン画面",
-  components: initialComponents,
-};
-
-const initialScreens: Screen[] = [initialScreen];
+function getInitialScreen(lang: Language): Screen {
+  const name = lang === "ja" ? "メイン画面" : "Main Screen";
+  return {
+    id: uuidv4(),
+    name,
+    components: [{ id: "root", type: "container", children: [] }],
+  };
+}
 
 const MAX_HISTORY = 50;
 
 function App() {
+  const { language, setLanguage, t } = useI18n();
+
   // ストーリーボード状態
-  const [screens, setScreens] = useState<Screen[]>(initialScreens);
-  const [history, setHistory] = useState<Screen[][]>([initialScreens]);
+  const [screens, setScreens] = useState<Screen[]>(() => [
+    getInitialScreen(language),
+  ]);
+  const [history, setHistory] = useState<Screen[][]>(() => [
+    [getInitialScreen(language)],
+  ]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Refs for synchronous access in callbacks
-  const historyRef = useRef<Screen[][]>([initialScreens]);
+  const historyRef = useRef<Screen[][]>([[getInitialScreen(language)]]);
   const historyIndexRef = useRef(0);
 
   const [currentScreenId, setCurrentScreenId] = useState<string>(
-    initialScreen.id
+    getInitialScreen(language).id
   );
-  const [entities, setEntities] = useState<Entity[]>(sampleEntities);
+  const [entities, setEntities] = useState<Entity[]>(() =>
+    getSampleEntities(language)
+  );
   const [panelType, setPanelType] = useState<"entities" | "screens">(
     "entities"
   );
@@ -1075,7 +1115,7 @@ function App() {
                     disabled={!canUndo}
                     colorScheme="gray"
                     size="sm"
-                    title="Undo (Ctrl+Z)"
+                    title={t("app.undo") + " (Ctrl+Z)"}
                   >
                     <Box as="span" mr={1}>
                       <svg
@@ -1092,14 +1132,14 @@ function App() {
                         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
                       </svg>
                     </Box>
-                    Undo
+                    {t("app.undo")}
                   </Button>
                   <Button
                     onClick={redo}
                     disabled={!canRedo}
                     colorScheme="gray"
                     size="sm"
-                    title="Redo (Ctrl+Shift+Z)"
+                    title={t("app.redo") + " (Ctrl+Shift+Z)"}
                   >
                     <Box as="span" mr={1}>
                       <svg
@@ -1116,15 +1156,27 @@ function App() {
                         <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
                       </svg>
                     </Box>
-                    Redo
+                    {t("app.redo")}
                   </Button>
                   <Button
                     onClick={() => setPreviewMode(!previewMode)}
                     colorScheme="blue"
                     size="sm"
                   >
-                    {previewMode ? "Exit Preview" : "Preview"}
+                    {previewMode ? t("app.exitPreview") : t("app.preview")}
                   </Button>
+                  <NativeSelect.Root size="sm" width="auto">
+                    <NativeSelect.Field
+                      value={language}
+                      onChange={(e) =>
+                        setLanguage(e.target.value as "en" | "ja")
+                      }
+                    >
+                      <option value="en">English</option>
+                      <option value="ja">日本語</option>
+                    </NativeSelect.Field>
+                    <NativeSelect.Indicator />
+                  </NativeSelect.Root>
                   <NativeSelect.Root size="sm" width="auto">
                     <NativeSelect.Field
                       value={exportMode}
@@ -1132,8 +1184,8 @@ function App() {
                         setExportMode(e.target.value as "screen" | "storyboard")
                       }
                     >
-                      <option value="screen">Current Screen</option>
-                      <option value="storyboard">Storyboard</option>
+                      <option value="screen">{t("app.currentScreen")}</option>
+                      <option value="storyboard">{t("app.storyboard")}</option>
                     </NativeSelect.Field>
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
@@ -1144,8 +1196,8 @@ function App() {
                         setExportFormat(e.target.value as "json" | "llm-text")
                       }
                     >
-                      <option value="json">JSON</option>
-                      <option value="llm-text">LLM Text</option>
+                      <option value="json">{t("app.json")}</option>
+                      <option value="llm-text">{t("app.llmText")}</option>
                     </NativeSelect.Field>
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
@@ -1166,7 +1218,7 @@ function App() {
                         <line x1="12" y1="15" x2="12" y2="3" />
                       </svg>
                     </Box>
-                    Export
+                    {t("app.export")}
                   </Button>
                   <Button onClick={handleImport} colorScheme="purple" size="sm">
                     <Box as="span" mr={1}>
@@ -1185,7 +1237,7 @@ function App() {
                         <line x1="12" y1="3" x2="12" y2="15" />
                       </svg>
                     </Box>
-                    Import
+                    {t("app.import")}
                   </Button>
                   <input
                     type="file"
@@ -1236,10 +1288,10 @@ function App() {
                       >
                         <Tabs.List>
                           <Tabs.Trigger value="entities" color="gray.300">
-                            Entities
+                            {t("tabs.entities")}
                           </Tabs.Trigger>
                           <Tabs.Trigger value="screens" color="gray.300">
-                            Screens
+                            {t("tabs.screens")}
                           </Tabs.Trigger>
                         </Tabs.List>
                       </Tabs.Root>

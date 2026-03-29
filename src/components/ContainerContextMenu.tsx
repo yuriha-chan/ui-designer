@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Flex, Text, VStack, CloseButton } from "@chakra-ui/react";
+import { useI18n } from "../I18nContext";
 
 interface ContainerContextMenuProps {
   onSelect: (
@@ -16,6 +17,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
   x,
   y,
 }) => {
+  const { t } = useI18n();
   const MENU_MAX_HEIGHT = 200;
   const isNearBottom = y + MENU_MAX_HEIGHT > window.innerHeight;
   const menuTop = isNearBottom ? undefined : y;
@@ -37,7 +39,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
         p={4}
       >
         <Text fontSize="lg" fontWeight="bold">
-          Add Component
+          {t("contextMenu.addComponent")}
         </Text>
         <CloseButton onClick={onClose} />
       </Flex>
@@ -55,7 +57,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           <Box className="option-icon" fontSize="xl">
             □
           </Box>
-          <Box className="option-label">Container</Box>
+          <Box className="option-label">{t("contextMenu.container")}</Box>
         </Flex>
         <Flex
           className="menu-option"
@@ -70,7 +72,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           <Box className="option-icon" fontSize="xl" color="blue.500">
             T
           </Box>
-          <Box className="option-label">Text</Box>
+          <Box className="option-label">{t("contextMenu.text")}</Box>
         </Flex>
         <Flex
           className="menu-option"
@@ -85,7 +87,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           <Box className="option-icon" fontSize="xl" color="green.500">
             #
           </Box>
-          <Box className="option-label">Number</Box>
+          <Box className="option-label">{t("contextMenu.number")}</Box>
         </Flex>
         <Flex
           className="menu-option"
@@ -100,7 +102,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           <Box className="option-icon" fontSize="xl" color="red.500">
             B
           </Box>
-          <Box className="option-label">Button</Box>
+          <Box className="option-label">{t("contextMenu.button")}</Box>
         </Flex>
         <Flex
           className="menu-option"
@@ -115,7 +117,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           <Box className="option-icon" fontSize="xl" color="purple.500">
             I
           </Box>
-          <Box className="option-label">Input</Box>
+          <Box className="option-label">{t("contextMenu.input")}</Box>
         </Flex>
       </VStack>
     </Box>

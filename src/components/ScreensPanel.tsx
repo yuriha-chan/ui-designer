@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, VStack, HStack, Input, Button } from "@chakra-ui/react";
 import { Screen } from "../types";
+import { useI18n } from "../I18nContext";
 
 interface ScreensPanelProps {
   screens: Screen[];
@@ -19,12 +20,13 @@ const ScreensPanel: React.FC<ScreensPanelProps> = ({
   copyScreen,
   deleteScreen,
 }) => {
+  const { t } = useI18n();
   return (
     <Box className="screens-panel">
       <HStack className="add-screen-form" gap={2} mb={4}>
         <Input
           type="text"
-          placeholder="New screen name"
+          placeholder={t("screens.newScreenPlaceholder")}
           onKeyDown={(e) => {
             if (e.key === "Enter" && e.currentTarget.value.trim()) {
               addScreen(e.currentTarget.value.trim());
@@ -61,7 +63,7 @@ const ScreensPanel: React.FC<ScreensPanelProps> = ({
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </Box>
-          Add
+          {t("screens.add")}
         </Button>
       </HStack>
       <VStack className="screens-list" gap={2} align="stretch">
@@ -94,7 +96,7 @@ const ScreensPanel: React.FC<ScreensPanelProps> = ({
                     e.stopPropagation();
                     copyScreen(screen.id);
                   }}
-                  title="Copy screen"
+                  title={t("screens.copyScreen")}
                   size="xs"
                   variant="ghost"
                 >
@@ -106,7 +108,7 @@ const ScreensPanel: React.FC<ScreensPanelProps> = ({
                     e.stopPropagation();
                     deleteScreen(screen.id);
                   }}
-                  title="Delete screen"
+                  title={t("screens.deleteScreen")}
                   disabled={screens.length <= 1}
                   size="xs"
                   variant="ghost"

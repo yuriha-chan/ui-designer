@@ -26,6 +26,8 @@
 │   ├── App.css               # Application styles
 │   ├── index.css             # Global styles
 │   ├── main.tsx              # Application entry point
+│   ├── i18n.ts               # Translation dictionaries (en/ja)
+│   ├── I18nContext.tsx       # React Context for internationalization
 │   ├── ComponentNode.tsx     # Recursive component rendering with drag-and-drop
 │   ├── componentTree.ts      # Core algorithms (S-expressions, tree operations)
 │   ├── DragManager.tsx       # Drag context provider with throttling
@@ -74,11 +76,13 @@
 13. **src/dragStore.ts** - Simple state management for drag operations using useSyncExternalStore
 14. **src/DragManager.tsx** - Drag context provider with throttled updates
 15. **src/storage.ts** - localStorage auto-save/load utilities with validation
-16. **src/components/** - UI panel components (EntitiesPanel, ScreensPanel, EntityPathMenu, ContainerContextMenu)
-17. **src/test/unit/componentTree.test.ts** - Unit tests for core algorithms
-18. **src/test/unit/storage.test.ts** - Unit tests for storage utilities
-19. \***\*fixtures**/\*\* - Test data for components and entities
-20. \***\*mocks**/\*\* - Mock implementations for testing (react-dnd, uuid, usehooks, storage)
+16. **src/i18n.ts** - Translation dictionaries for English and Japanese with `t()` function
+17. **src/I18nContext.tsx** - React Context provider for i18n with `useI18n()` hook
+18. **src/components/** - UI panel components (EntitiesPanel, ScreensPanel, EntityPathMenu, ContainerContextMenu, EntityItem)
+19. **src/test/unit/componentTree.test.ts** - Unit tests for core algorithms
+20. **src/test/unit/storage.test.ts** - Unit tests for storage utilities
+21. \***\*fixtures**/\*\* - Test data for components and entities
+22. \***\*mocks**/\*\* - Mock implementations for testing (react-dnd, uuid, usehooks, storage)
 
 ## Characteristics Report
 
@@ -95,6 +99,7 @@
 - **Package Manager**: pnpm (project uses `type: "module"`)
 - **Key Dependencies**:
   - React 18.2.0, React DOM 18.2.0
+  - @chakra-ui/react 3.34.0 (UI component library with i18n LocaleProvider)
   - react-dnd 16.0.1 (drag-and-drop library)
   - react-dnd-html5-backend 16.0.1 (HTML5 backend for react-dnd)
   - @uidotdev/usehooks 2.4.1 (custom hooks, specifically useThrottle)
@@ -210,6 +215,15 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 - **Entity path display**: Parsed entity>property strings shown in components
 - **Dark theme**: #1a1a1a background with #f0f0f0 text
 
+#### 6. Internationalization (i18n)
+
+- **Languages**: English and Japanese translations with browser language detection
+- **Architecture**: React Context (`I18nContext`) with `useI18n()` hook exposing `language`, `setLanguage`, `t()`
+- **Translation files**: `i18n.ts` contains translation dictionaries for app header, tabs, entities, screens, components, context menus, placeholders, and sample data
+- **Persistence**: Language preference stored in localStorage with key `'lang'`
+- **Sample data translation**: Entity names and initial screen names localized based on detected language
+- **Chakra UI integration**: `LocaleProvider` wraps application for locale-aware components
+
 ### Component Responsibilities
 
 #### App Component
@@ -266,7 +280,7 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 
 - **Local state**: `useState` for component tree and context menu in App
 - **Custom store**: `dragStore` for cross-component drag state using `useSyncExternalStore`
-- **Context API**: `DragContext` for drag target management
+- **Context API**: `DragContext` for drag target management, `I18nContext` for internationalization
 - **No external state library** (Redux, Zustand, etc.)
 - **Mixed patterns**: Combines React patterns with custom store for specific needs
 
@@ -278,11 +292,12 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 - `dragStore` uses singleton pattern rather than React context for some drag state
 - Combination of patterns may increase complexity
 
-#### 2. Language Mix in Code
+#### 2. Internationalization
 
-- **Japanese comments**: Some comments in Japanese (e.g., "コンポーネントタイプと深さに基づく色を生成")
-- **Mixed language documentation**: Code comments in Japanese, documentation in English
-- **No consistency policy** for comment language
+- **UI localization**: Full English and Japanese translations via `i18n.ts` and `I18nContext`
+- **Sample data**: Entity names and initial screen names localized in both languages
+- **Browser detection**: Automatic language detection from `navigator.language` on first visit
+- **Persistence**: Language preference stored in localStorage with key `'lang'`
 
 #### 3. Drag-and-Drop Implementation Complexity
 
@@ -331,11 +346,12 @@ The project implements a "Topological UI Designer" - a pedagogical tool that enf
 
 - **Input node**: Implementation of a specialized component for user data entry fields
 - **Entity editor**: A dedicated interface for pasting and managing entity descriptions and properties
-- **Common labels**: Support for a restricted vocabulary of labels (e.g. OK, Cancel, Select)
+- **Common labels**: Support for a restricted vocabulary of labels (e.g. OK, Cancel, Select) - _partially implemented via i18n placeholder translations_
 - **Export/import**: Functionality to save and load designs as JSON and HTML
 - **Storyboard**: A system to link multiple UI states to describe user transitions
 - **Demo mode**: A testing environment for storyboards using a minimalistic, functional UI
+- **Additional languages**: Extending i18n support beyond English and Japanese
 
 ## Summary
 
-The Topological UI Designer is a specialized educational tool built with modern React/TypeScript. It enforces a constrained design environment to teach UI architecture fundamentals through topological relationships rather than visual styling. The architecture centers around hierarchical component trees, deterministic sorting via S-expressions, and a custom drag-and-drop system. Panel UI logic is extracted into modular components in src/components/ for maintainability. The project includes automated formatting (Prettier), testing (Vitest), and Claude Code automation hooks.
+The Topological UI Designer is a specialized educational tool built with modern React/TypeScript. It enforces a constrained design environment to teach UI architecture fundamentals through topological relationships rather than visual styling. The architecture centers around hierarchical component trees, deterministic sorting via S-expressions, and a custom drag-and-drop system. Panel UI logic is extracted into modular components in src/components/ for maintainability. The application supports internationalization (English/Japanese) with browser language detection and localStorage persistence. The project includes automated formatting (Prettier), testing (Vitest), and Claude Code automation hooks.

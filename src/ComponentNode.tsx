@@ -6,6 +6,7 @@ import { DragItem, ItemTypes, DropResult } from "./dnd";
 import { dragStore, useDragSelector } from "./dragStore";
 import { DragContext } from "./DragManager";
 import { useContextMenuDispatch } from "./ContextMenuContext";
+import { useI18n } from "./I18nContext";
 import {
   getColorForComponent,
   sortComponentsBySExpression,
@@ -43,6 +44,7 @@ const ComponentNode: React.FC<{
     previewMode = false,
   }) => {
     const setContextMenu = useContextMenuDispatch();
+    const { t } = useI18n();
     const color = getColorForComponent(component.type, depth);
     const { entity, property, pathParts } = parseEntityPath(
       component.entityPath
@@ -256,11 +258,13 @@ const ComponentNode: React.FC<{
                     color="gray.800"
                     title={
                       targetScreenName
-                        ? `Target: ${targetScreenName}`
-                        : "Select target screen"
+                        ? `${t("component.selectTargetScreen")}: ${targetScreenName}`
+                        : t("component.selectTargetScreen")
                     }
                   >
-                    <option value="">Select target screen</option>
+                    <option value="">
+                      {t("component.selectTargetScreen")}
+                    </option>
                     {screens.map((screen) => (
                       <option key={screen.id} value={screen.id}>
                         {screen.name}
@@ -282,7 +286,7 @@ const ComponentNode: React.FC<{
             <Box className="component-actions">
               <Button
                 onClick={handleCopy}
-                title="Copy"
+                title={t("component.copy")}
                 variant="ghost"
                 size="xs"
               >
@@ -290,7 +294,7 @@ const ComponentNode: React.FC<{
               </Button>
               <Button
                 onClick={() => onRemove(component.id)}
-                title="Remove"
+                title={t("component.remove")}
                 variant="ghost"
                 size="xs"
               >

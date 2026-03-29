@@ -2,6 +2,7 @@ import React from "react";
 import { Box, VStack, HStack, Button } from "@chakra-ui/react";
 import { Entity, PropertyType } from "../types";
 import { EntityItem } from "./EntityItem";
+import { useI18n } from "../I18nContext";
 
 interface EntitiesPanelProps {
   entities: Entity[];
@@ -43,11 +44,12 @@ const EntitiesPanel: React.FC<EntitiesPanelProps> = ({
   updatePropertyName,
   updatePropertyType,
 }) => {
+  const { t } = useI18n();
   return (
     <Box className="entities-panel">
       <HStack mb={2}>
         <Button size="sm" colorScheme="blue" onClick={addEntity}>
-          + Add Entity
+          {t("entities.addEntity")}
         </Button>
       </HStack>
       <VStack className="entities-list" gap={2} align="stretch">
