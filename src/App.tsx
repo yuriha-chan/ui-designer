@@ -1095,9 +1095,14 @@ function App() {
                   >
                     {previewMode ? t("app.exitPreview") : t("app.preview")}
                   </Button>
-                  <NativeSelect.Root size="sm" width="auto">
+                  <NativeSelect.Root
+                    size="sm"
+                    width="auto"
+                    backgroundColor="white"
+                  >
                     <NativeSelect.Field
                       value={language}
+                      color="gray.900"
                       onChange={(e) =>
                         setLanguage(e.target.value as "en" | "ja")
                       }
@@ -1107,9 +1112,14 @@ function App() {
                     </NativeSelect.Field>
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
-                  <NativeSelect.Root size="sm" width="auto">
+                  <NativeSelect.Root
+                    size="sm"
+                    width="auto"
+                    backgroundColor="white"
+                  >
                     <NativeSelect.Field
                       value={exportMode}
+                      color="gray.900"
                       onChange={(e) =>
                         setExportMode(e.target.value as "screen" | "storyboard")
                       }
@@ -1119,9 +1129,14 @@ function App() {
                     </NativeSelect.Field>
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
-                  <NativeSelect.Root size="sm" width="auto">
+                  <NativeSelect.Root
+                    size="sm"
+                    width="auto"
+                    backgroundColor="white"
+                  >
                     <NativeSelect.Field
                       value={exportFormat}
+                      color="gray.900"
                       onChange={(e) =>
                         setExportFormat(e.target.value as "json" | "llm-text")
                       }
