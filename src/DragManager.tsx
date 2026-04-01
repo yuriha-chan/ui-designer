@@ -8,7 +8,7 @@ export const DragContext = createContext<{
 
 export function DragManager({ children }: { children: ReactNode }) {
   const [rawDropTargetId, setRawDropTargetId] = useState<string | null>(null);
-  const throttledId = useThrottle(rawDropTargetId, 200);
+  const throttledId = useThrottle(rawDropTargetId, 100);
 
   useEffect(() => {
     dragStore.setCurrentDropTargetId(throttledId);

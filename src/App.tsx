@@ -33,6 +33,7 @@ import {
   sortComponentsBySExpression,
   isDescendant as isDescendantPure,
   findAndRemove,
+  insert,
   findComponent,
   deepCopy,
   generateSExpression,
@@ -633,48 +634,27 @@ function App() {
 
   const moveComponent = useCallback(
     (draggedId: string, targetId: string) => {
-      const insertAt = (
-        comps: UIComponent[],
-        targetId: string,
-        node: UIComponent
-      ): UIComponent[] => {
-        return comps.map((comp) => {
-          if (comp.id === targetId) {
-            return { ...comp, children: [...comp.children, node] };
-          }
-          return { ...comp, children: insertAt(comp.children, targetId, node) };
-        });
-      };
-
-      const currentComponents = getCurrentComponents();
-
-      const { node, newComps } = findAndRemove(currentComponents, draggedId);
-      if (!node) {
-        return;
-      }
-
-      let updatedComps = newComps;
-      updatedComps = insertAt(newComps, targetId, node);
-
-      updateCurrentScreenComponents(() => updatedComps);
+      if (targetId === null) return;
+      updateCurrentScreenComponents((comps) => {
+        if (draggedId === targetId || isDescendantPure(comps, draggedId, targetId)) { return comps }
+        const { node, newComps } = findAndRemove(comps, draggedId);
+        if (!node) {
+          throw Error(`component draggedId=${draggedId} not found`)
+        }
+        if (!findComponent(newComps, targetId)) {
+          throw Error(`component targetId=${targetId} not found`)
+        }
+        const inserted =  insert(newComps, targetId, node);
+        console.log("move", comps, inserted);
+        return inserted;
+      })
     },
-    [getCurrentComponents, updateCurrentScreenComponents]
+    [updateCurrentScreenComponents]
   );
 
   const copyComponent = useCallback(
     (sourceId: string, parentId: string) => {
-      // 現在のコンポーネントを取得
-      const currentComponents = getCurrentComponents();
-
-      // ソースコンポーネントを探す
-      const source = findComponent(currentComponents, sourceId);
-      if (!source) return;
-
-      // ディープコピーを作成（新しいIDを割り当て）
-      const copied = deepCopy(source);
-
-      // 親のchildrenに追加
-      const updateComponents = (comps: UIComponent[]): UIComponent[] => {
+      const copyRecursive = (copied: UIComponent, comps: UIComponent[]): UIComponent[] => {
         return comps.map((comp) => {
           if (comp.id === parentId) {
             return {
@@ -684,14 +664,20 @@ function App() {
           }
           return {
             ...comp,
-            children: updateComponents(comp.children),
+            children: copyRecursive(copied, comp.children),
           };
         });
       };
-
-      updateCurrentScreenComponents((comps) => updateComponents(comps));
+      updateCurrentScreenComponents((comps) => {
+        const source = findComponent(comps, sourceId);
+        if (!source) {
+          throw Error(`component sourceId=${sourceId} not found in ${JSON.stringify(comps)}`)
+        }
+        const copied = deepCopy(source);
+        return copyRecursive(copied, comps)
+      });
     },
-    [getCurrentComponents, updateCurrentScreenComponents]
+    [updateCurrentScreenComponents]
   );
 
   const removeComponent = useCallback(

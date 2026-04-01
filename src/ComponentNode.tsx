@@ -279,9 +279,6 @@ const ComponentNode: React.FC<{
               <Box className="target-screen-display">→ {targetScreenName}</Box>
             )}
           </Box>
-          {component.type === "container" && isOver && canDrop && (
-            <Box className="insertion-preview" />
-          )}
           {!previewMode && parentId && (
             <Box className="component-actions">
               <Button
@@ -323,6 +320,9 @@ const ComponentNode: React.FC<{
                 />
               ))}
             </Box>
+          )}
+          {component.type === "container" && isOver && canDrop && (
+            <Box className="insertion-preview" />
           )}
         </Box>
       </Box>
