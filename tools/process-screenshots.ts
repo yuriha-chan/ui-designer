@@ -29,11 +29,15 @@ interface ScreenshotMeta {
   sequence?: { position: number; total: number };
   cropBox?: BoundingBox;
   markedBoxes?: BoundingBox[];
+  margin?: number;
+  marginBottom?: number;
 }
 
 const MARGIN = 20;
-const MARKER_COLOR = { r: 255, g: 0, b: 0, alpha: 1 };
+const MARKER_MARGIN = 5;
+const MARKER_COLOR = { r: 255, g: 100, b: 0, alpha: 1 };
 const MARKER_STROKE_WIDTH = 3;
+const OVERLAY_OPACITY = 0.5;
 
 async function processScreenshot(meta: ScreenshotMeta): Promise<void> {
   const rawPath = path.join(SCREENSHOTS_DIR, meta.rawPath);
@@ -60,11 +64,14 @@ async function processScreenshot(meta: ScreenshotMeta): Promise<void> {
   };
 
   if (meta.cropBox) {
+    const marginTop = meta.margin ?? MARGIN;
+    const marginBottomVal = meta.marginBottom ?? meta.margin ?? MARGIN;
+
     cropBox = {
-      x: Math.max(0, meta.cropBox.x - MARGIN),
-      y: Math.max(0, meta.cropBox.y - MARGIN),
-      width: meta.cropBox.width + MARGIN * 2,
-      height: meta.cropBox.height + MARGIN * 2,
+      x: Math.max(0, meta.cropBox.x - marginTop),
+      y: Math.max(0, meta.cropBox.y - marginTop),
+      width: meta.cropBox.width + marginTop + marginBottomVal,
+      height: meta.cropBox.height + marginTop + marginBottomVal,
     };
 
     // Adjust crop box to image bounds
@@ -78,23 +85,35 @@ async function processScreenshot(meta: ScreenshotMeta): Promise<void> {
 
   // Create SVG for markers
   let markerSvg = "";
+  let overlaySvg = "";
   if (meta.markedBoxes && meta.markedBoxes.length > 0) {
-    for (const box of meta.markedBoxes) {
-      // Adjust coordinates relative to crop
-      const adjustedX = box.x - cropBox.x + MARGIN;
-      const adjustedY = box.y - cropBox.y + MARGIN;
+    // Create semi-transparent white overlay on non-marked areas
+    overlaySvg = `<svg width="${cropBox.width}" height="${cropBox.height}">`;
+    overlaySvg += `<defs><mask id="m"><rect width="100%" height="100%" fill="white"/>`;
 
+    for (const box of meta.markedBoxes) {
+      const adjustedX = box.x - cropBox.x;
+      const adjustedY = box.y - cropBox.y;
+
+      // Cut out the marked box area (with margin) from the mask (black = hidden)
+      overlaySvg += `<rect x="${adjustedX - MARKER_MARGIN}" y="${adjustedY - MARKER_MARGIN}" width="${box.width + MARKER_MARGIN * 2}" height="${box.height + MARKER_MARGIN * 2}" fill="black"/>`;
+
+      // Add red stroke marker around the box (with margin)
       markerSvg += `
         <rect
-          x="${adjustedX}"
-          y="${adjustedY}"
-          width="${box.width}"
-          height="${box.height}"
+          x="${adjustedX - MARKER_MARGIN}"
+          y="${adjustedY - MARKER_MARGIN}"
+          width="${box.width + MARKER_MARGIN * 2}"
+          height="${box.height + MARKER_MARGIN * 2}"
           fill="none"
           stroke="red"
           stroke-width="${MARKER_STROKE_WIDTH}"
         />`;
     }
+
+    overlaySvg += `</mask></defs>`;
+    overlaySvg += `<rect width="100%" height="100%" fill="white" fill-opacity="${OVERLAY_OPACITY}" mask="url(#m)"/>`;
+    overlaySvg += `</svg>`;
   }
 
   // Process image
@@ -105,14 +124,21 @@ async function processScreenshot(meta: ScreenshotMeta): Promise<void> {
     height: Math.round(cropBox.height),
   });
 
-  if (markerSvg) {
-    const svgOverlay = Buffer.from(
-      `<svg width="${cropBox.width}" height="${cropBox.height}">${markerSvg}</svg>`
-    );
-    await pipeline
-      .composite([{ input: svgOverlay, blend: "over" }])
-      .png()
-      .toFile(finalPath);
+  if (markerSvg || overlaySvg) {
+    const composites: any[] = [];
+
+    if (overlaySvg) {
+      composites.push({ input: Buffer.from(overlaySvg), blend: "over" });
+    }
+
+    if (markerSvg) {
+      const markerOverlay = Buffer.from(
+        `<svg width="${cropBox.width}" height="${cropBox.height}">${markerSvg}</svg>`
+      );
+      composites.push({ input: markerOverlay, blend: "over" });
+    }
+
+    await pipeline.composite(composites).png().toFile(finalPath);
   } else {
     await pipeline.png().toFile(finalPath);
   }

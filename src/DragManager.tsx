@@ -1,12 +1,14 @@
-import { useState, useEffect, createContext, ReactNode } from 'react';
-import { useThrottle } from '@uidotdev/usehooks';
-import { dragStore } from './dragStore';
+import { useState, useEffect, createContext, ReactNode } from "react";
+import { useThrottle } from "@uidotdev/usehooks";
+import { dragStore } from "./dragStore";
 
-export const DragContext = createContext<{ setRawDropTargetId: (id: string | null) => void } | null>(null);
+export const DragContext = createContext<{
+  setRawDropTargetId: (id: string | null) => void;
+} | null>(null);
 
 export function DragManager({ children }: { children: ReactNode }) {
   const [rawDropTargetId, setRawDropTargetId] = useState<string | null>(null);
-  const throttledId = useThrottle(rawDropTargetId, 200); // 200ms throttle
+  const throttledId = useThrottle(rawDropTargetId, 200);
 
   useEffect(() => {
     dragStore.setCurrentDropTargetId(throttledId);
