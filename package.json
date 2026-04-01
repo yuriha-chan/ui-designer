@@ -15,7 +15,7 @@
     "test:unit": "vitest src/test/unit",
     "test:components": "vitest src/test/components",
     "test:integration": "vitest src/test/integration",
-    "screenshots": "playwright test --project=chromium tests/e2e/tutorial-screenshots.spec.ts",
+    "screenshots": "playwright test --project=chromium tests/e2e/",
     "process-screenshots": "npx tsx tools/process-screenshots.ts"
   },
   "dependencies": {
