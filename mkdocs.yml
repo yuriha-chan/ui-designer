@@ -1,0 +1,46 @@
+site_name: UI Designer Documentation
+site_url: https://y5h.net/ui-designer/
+site_description: Documentation for UI Designer - A tool for building abstract mockups
+site_author: Yuriha
+
+repo_url: https://github.com/yuriha-chan/ui-designer
+repo_name: yuriha-chan/ui-designer
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  highlightjs: true
+  hljs_languages:
+    - yaml
+    - python
+    - javascript
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - attr_list
+  - def_list
+  - tables
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Tutorial: Tutorial.md
+  - User Guide: User_Guide.md
+
+plugins:
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: en
+          name: English
+        - locale: ja
+          default: true
+          name: 日本語
+  - search:
+      lang:
+        - en
+        - ja

@@ -14,7 +14,9 @@
     "test:watch": "vitest --watch",
     "test:unit": "vitest src/test/unit",
     "test:components": "vitest src/test/components",
-    "test:integration": "vitest src/test/integration"
+    "test:integration": "vitest src/test/integration",
+    "screenshots": "playwright test --project=chromium tests/e2e/tutorial-screenshots.spec.ts",
+    "process-screenshots": "npx tsx tools/process-screenshots.ts"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.34.0",
@@ -32,9 +34,11 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^25.5.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@types/uuid": "^10.0.0",
@@ -47,6 +51,8 @@
     "eslint-plugin-react-refresh": "^0.4.3",
     "jsdom": "^29.0.1",
     "prettier": "^3.8.1",
+    "sharp": "^0.34.5",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vitest": "^3.0.0"
