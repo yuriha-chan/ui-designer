@@ -30,13 +30,6 @@ export const translations = {
       deleteConfirm: 'Delete entity "{name}"?',
       deletePropertyConfirm: 'Delete property "{name}"?',
     },
-    // Property types
-    propertyTypes: {
-      string: "string",
-      number: "number",
-      entity: "entity",
-      function: "function",
-    },
     // Screens panel
     screens: {
       newScreenPlaceholder: "New screen name",
@@ -69,28 +62,6 @@ export const translations = {
       delete: "Delete",
       new: "New",
     },
-    // Sample data
-    sample: {
-      mainScreen: "Main Screen",
-      account: "Account",
-      product: "Product",
-      order: "Order",
-      user: "User",
-      name: "Name",
-      email: "Email",
-      balance: "Balance",
-      status: "Status",
-      title: "Title",
-      price: "Price",
-      stock: "Stock",
-      category: "Category",
-      id: "ID",
-      date: "Date",
-      total: "Total",
-      username: "Username",
-      role: "Role",
-      lastLogin: "Last Login",
-    },
   },
   ja: {
     // App header
@@ -98,7 +69,7 @@ export const translations = {
       undo: "元に戻す",
       redo: "やり直し",
       preview: "プレビュー",
-      exitPreview: "プレビュー終了",
+      exitPreview: "プレビューを終了",
       export: "エクスポート",
       import: "インポート",
       currentScreen: "現在の画面",
@@ -122,13 +93,6 @@ export const translations = {
       deleteProperty: "プロパティを削除",
       deleteConfirm: "エンティティ「{name}」を削除しますか？",
       deletePropertyConfirm: "プロパティ「{name}」を削除しますか？",
-    },
-    // Property types
-    propertyTypes: {
-      string: "文字列",
-      number: "数値",
-      entity: "エンティティ",
-      function: "関数",
     },
     // Screens panel
     screens: {
@@ -161,28 +125,6 @@ export const translations = {
       select: "選択",
       delete: "削除",
       new: "新規",
-    },
-    // Sample data
-    sample: {
-      mainScreen: "メイン画面",
-      account: "アカウント",
-      product: "商品",
-      order: "注文",
-      user: "ユーザー",
-      name: "名前",
-      email: "メール",
-      balance: "残高",
-      status: "ステータス",
-      title: "タイトル",
-      price: "価格",
-      stock: "在庫",
-      category: "カテゴリ",
-      id: "ID",
-      date: "日付",
-      total: "合計",
-      username: "ユーザー名",
-      role: "役割",
-      lastLogin: "最終ログイン",
     },
   },
 } as const;

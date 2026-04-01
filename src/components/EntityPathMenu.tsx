@@ -110,6 +110,7 @@ const EntityPathMenu: React.FC<EntityPathMenuProps> = ({
           display="flex"
           alignItems="center"
           width="100%"
+          role="menuitem"
         >
           <Box flex="1" onClick={handleClick} textAlign="left" pl={depth * 4}>
             {property.name}
@@ -156,6 +157,7 @@ const EntityPathMenu: React.FC<EntityPathMenuProps> = ({
       bottom={menuBottom}
       zIndex={1000}
       overflowY="auto"
+      role="menu"
     >
       <Flex
         className="menu-header"
@@ -178,6 +180,7 @@ const EntityPathMenu: React.FC<EntityPathMenuProps> = ({
             _hover={{ bg: "gray.100" }}
             onClick={() => onSelect(`:${placeholder}`)}
             fontWeight={placeholder === "..." ? "bold" : "normal"}
+            role="menuitem"
           >
             {placeholder}
           </Box>

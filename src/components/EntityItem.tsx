@@ -70,10 +70,10 @@ const EntityItemInner: React.FC<EntityItemProps> = ({
     () =>
       createListCollection({
         items: [
-          { label: t("propertyTypes.string"), value: "string" },
-          { label: t("propertyTypes.number"), value: "number" },
-          { label: t("propertyTypes.entity"), value: "entity" },
-          { label: t("propertyTypes.function"), value: "function" },
+          { label: "string", value: "string" },
+          { label: "number", value: "number" },
+          { label: "entity", value: "entity" },
+          { label: "function", value: "function" },
         ],
       }),
     [t]

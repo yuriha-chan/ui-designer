@@ -51,30 +51,7 @@ import { useI18n, type Language } from "./I18nContext";
 import "./App.css";
 
 function getSampleEntities(lang: Language): Entity[] {
-  if (lang === "ja") {
-    return [
-      {
-        name: "商品 (例)",
-        properties: [
-          { name: "タイトル", type: "string" },
-          { name: "価格", type: "number" },
-          { name: "在庫", type: "number" },
-          { name: "カテゴリ", type: "string" },
-        ],
-      },
-    ];
-  }
-  return [
-    {
-      name: "Product (example)",
-      properties: [
-        { name: "Title", type: "string" },
-        { name: "Price", type: "number" },
-        { name: "Stock", type: "number" },
-        { name: "Category", type: "string" },
-      ],
-    },
-  ];
+  return [];
 }
 
 function getInitialScreen(lang: Language): Screen {
@@ -1038,8 +1015,7 @@ function App() {
                 variant="ghost"
                 colorScheme="gray"
                 size="sm"
-              >
-                ×
+              >{t("app.exitPreview")}
               </Button>
             ) : (
               <Box as="header" className="header">

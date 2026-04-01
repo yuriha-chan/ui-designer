@@ -31,6 +31,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
       top={menuTop}
       bottom={menuBottom}
       zIndex={1000}
+      role="menu"
     >
       <Flex
         className="menu-header"
@@ -53,6 +54,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           cursor="pointer"
           width="100%"
           _hover={{ bg: "gray.100" }}
+          role="menuitem"
         >
           <Box className="option-icon" fontSize="xl">
             □
@@ -68,6 +70,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           cursor="pointer"
           width="100%"
           _hover={{ bg: "gray.100" }}
+          role="menuitem"
         >
           <Box className="option-icon" fontSize="xl" color="blue.500">
             T
@@ -83,6 +86,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           cursor="pointer"
           width="100%"
           _hover={{ bg: "gray.100" }}
+          role="menuitem"
         >
           <Box className="option-icon" fontSize="xl" color="green.500">
             #
@@ -98,6 +102,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           cursor="pointer"
           width="100%"
           _hover={{ bg: "gray.100" }}
+          role="menuitem"
         >
           <Box className="option-icon" fontSize="xl" color="red.500">
             B
@@ -113,6 +118,7 @@ const ContainerContextMenu: React.FC<ContainerContextMenuProps> = ({
           cursor="pointer"
           width="100%"
           _hover={{ bg: "gray.100" }}
+          role="menuitem"
         >
           <Box className="option-icon" fontSize="xl" color="purple.500">
             I

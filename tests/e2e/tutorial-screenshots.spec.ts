@@ -101,196 +101,283 @@ async function takeScreenshot(
   await saveMetadata();
 }
 
+async function clickEntityTab(page: Page) {
+  await page.getByRole("tab", { name: "エンティティ" }).click();
+  await page.waitForTimeout(100);
+}
+
+async function clickScreensTab(page: Page) {
+  await page.getByRole("tab", { name: "画面" }).click();
+  await page.waitForTimeout(100);
+}
+
+async function addEntity(page: Page) {
+  await page.getByRole("button", { name: "+ エンティティを追加" }).click();
+  await page.waitForTimeout(200);
+}
+
+async function addProperty(page: Page, entityIndex: number) {
+  await page
+    .locator(".entity")
+    .nth(entityIndex)
+    .getByRole("button", { name: "+" })
+    .first()
+    .click();
+  await page.waitForTimeout(200);
+}
+
+async function setEntityName(page: Page, entityIndex: number, name: string, callback: any) {
+  await page
+    .locator(".entity")
+    .nth(entityIndex)
+    .locator(".entity-name")
+    .click();
+  await page.waitForTimeout(100);
+  await page
+    .locator(".entity")
+    .nth(entityIndex)
+    .getByRole("textbox")
+    .first()
+    .fill(name);
+  if (callback) {
+    await callback();
+  }
+  await page
+    .locator(".entity")
+    .nth(entityIndex)
+    .getByRole("textbox")
+    .first()
+    .press("Enter");
+  await page.waitForTimeout(200);
+}
+
+async function setPropertyName(
+  page: Page,
+  entityIndex: number,
+  propertyIndex: number,
+  name: string
+) {
+  const entity = page.locator(".entity").nth(entityIndex);
+  await entity
+    .locator(".property-row")
+    .nth(propertyIndex)
+    .locator(".entity-property")
+    .click();
+  await page.waitForTimeout(100);
+  await entity
+    .locator(".property-row")
+    .nth(propertyIndex)
+    .getByRole("textbox")
+    .fill(name);
+  await entity
+    .locator(".property-row")
+    .nth(propertyIndex)
+    .getByRole("textbox")
+    .press("Enter");
+  await page.waitForTimeout(100);
+}
+
+async function setPropertyType(
+  page: Page,
+  entityIndex: number,
+  propertyIndex: number,
+  type: string
+) {
+  const entity = page.locator(".entity").nth(entityIndex);
+  await entity
+    .locator(".property-row")
+    .nth(propertyIndex)
+    .locator(".property-type-badge")
+    .click();
+  await page.waitForTimeout(100);
+  await page.getByRole("option", { name: type }).click();
+  await page.waitForTimeout(100);
+}
+
+async function addScreen(page: Page, name: string) {
+  const input = page.locator(".add-screen-form").getByRole("textbox");
+  await input.fill(name);
+  await page.getByRole("button", { name: "追加" }).click();
+  await page.waitForTimeout(100);
+}
+
+async function selectScreen(page: Page, index: number) {
+  await page.locator(".screen-item").nth(index).click();
+  await page.waitForTimeout(100);
+}
+
+async function openContextMenu(page: Page, onContainer = false) {
+  if (onContainer) {
+    const container = page.locator('.children-container .component-box.component-container').first();
+    await container.waitFor({ state: 'visible' });
+
+    const box = await container.boundingBox();
+    if (!box) {
+      throw new Error('Failed to get container boundingBox');
+    }
+
+    // Look into right-top corner
+    const point = { x: box.x + 5, y: box.y + 5 };
+
+    // Check if there is a child
+    const childCount = await container.locator('.component-box').count({ timeout: 0 });
+    if (childCount > 0) {
+      // Ensure there is no overlapping child container
+      const children = container.locator('.component-box');
+      const overlapping = await children.evaluateAll((elements, { x, y }) => {
+        return elements.some((el) => {
+          const rect = el.getBoundingClientRect();
+          return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+        });
+      }, point);
+
+      if (overlapping) {
+        throw new Error('Overlapping childrenc container in right-top corner');
+      }
+    }
+
+    await page.mouse.click(point.x, point.y, { button: 'right' });
+  } else {
+    await page.locator('.component-tree').click({ button: 'right' });
+  }
+
+  await page.locator('[role="menu"]').waitFor({ state: 'visible' });
+}
+
+async function selectContextMenuOption(page: Page, option: string) {
+  await page.getByRole("menuitem").filter({ hasText: option }).click();
+  await page.waitForTimeout(100);
+}
+
+async function expandEntityAccordion(page: Page, entityName: string) {
+  await page
+    .locator(".entity-path-menu")
+    .getByRole("button", { name: entityName })
+    .click();
+  await page.waitForTimeout(100);
+}
+
+async function selectEntityProperty(
+  page: Page,
+  entityIndex: number,
+  propertyIndex: number
+) {
+  await page
+    .locator(".entity-path-menu")
+    .locator(".accordion-item")
+    .nth(entityIndex)
+    .getByRole("menuitem")
+    .nth(propertyIndex)
+    .click();
+  await page.waitForTimeout(100);
+}
+
+async function selectPlaceholder(page: Page, placeholderIndex: number) {
+  await page
+    .locator(".entity-path-menu")
+    .getByRole("menuitem")
+    .nth(placeholderIndex)
+    .click();
+  await page.waitForTimeout(100);
+}
+
 test.describe("Tutorial Screenshots", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    // Clear localStorage and set Japanese locale
     await page.evaluate(() => {
       localStorage.clear();
       localStorage.setItem("lang", "ja");
     });
     await page.reload();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
   });
 
-  test("Step 1: Define Entities", async ({ page }) => {
-    // Wait for the app to load
-    await page.waitForSelector(".entities-panel", { timeout: 10000 });
+  test("Tutorial Screenshot Capture", async ({ page }) => {
+    await page.locator(".entities-panel").waitFor({ timeout: 5000 });
+
+    // ========================================
+    // Step 1: エンティティを定義する
+    // ========================================
 
     await takeScreenshot(page, "step1-01", 1, "エンティティパネルの初期状態", {
       cropSelector: ".side-panel",
     });
 
-    // Click add entity button
-    await page.locator('button:has-text("+ エンティティを追加")').click();
-    await page.waitForTimeout(500);
+    await addEntity(page);
 
     await takeScreenshot(page, "step1-02", 1, "エンティティ追加ボタン", {
       cropSelector: ".entities-panel",
       markedSelectors: ['.entities-panel button:has-text("+")'],
     });
 
-    // Fill in entity name "本" - click on the entity name to edit
-    await page.locator(".entity:last-child .entity-name").click();
-    await page.waitForTimeout(300);
-    const entityInput = page.locator(".entity:last-child input").first();
-    await entityInput.fill("本");
-    await entityInput.press("Enter");
-    await page.waitForTimeout(500);
-
-    await takeScreenshot(page, "step1-03", 1, "新しいエンティティ「本」", {
-      cropSelector: ".entities-panel",
+    await setEntityName(page, 0, "本", async () => {
+      await takeScreenshot(page, "step1-03", 1, "エンティティ名前変更", {
+        cropSelector: ".entities-panel",
+        markedSelectors: ['.entities-panel input'],
+      });
     });
 
-    // Add property "タイトル" - click the green + button for the entity
-    await page
-      .locator(".entity")
-      .first()
-      .locator("button")
-      .filter({ hasText: "+" })
-      .click();
-    await page.waitForTimeout(500);
+    await addProperty(page, 0);
+    await setPropertyName(page, 0, 0, "タイトル");
 
-    // Click on the new property name to edit it
-    await page
-      .locator(".entity")
-      .first()
-      .locator(".property-row:last-child .entity-property")
-      .click();
-    await page.waitForTimeout(300);
+    await addProperty(page, 0);
+    await setPropertyName(page, 0, 1, "価格");
+    await setPropertyType(page, 0, 1, "number");
 
-    let propInput = page
-      .locator(".entity")
-      .first()
-      .locator(".property-row:last-child input");
-    await propInput.fill("タイトル");
-    await propInput.press("Enter");
-    await page.waitForTimeout(300);
-
-    // Add property "価格"
-    await page
-      .locator(".entity")
-      .first()
-      .locator("button")
-      .filter({ hasText: "+" })
-      .click();
-    await page.waitForTimeout(500);
-    await page
-      .locator(".entity")
-      .first()
-      .locator(".property-row:last-child .entity-property")
-      .click();
-    await page.waitForTimeout(300);
-    propInput = page
-      .locator(".entity")
-      .first()
-      .locator(".property-row:last-child input");
-    await propInput.fill("価格");
-    await propInput.press("Enter");
-    await page.waitForTimeout(300);
-
-    await takeScreenshot(page, "step1-04", 1, "プロパティの追加", {
+    await takeScreenshot(page, "step1-04", 1, "プロパティの型選択", {
       cropSelector: ".entity:first-child",
     });
 
-    // Add second entity "顧客"
-    await page.locator('button:has-text("+ エンティティを追加")').click();
-    await page.waitForTimeout(300);
-    await page.locator(".entity:last-child .entity-name").click();
-    await page.waitForTimeout(300);
-    const entityInput2 = page.locator(".entity:last-child input").first();
-    await entityInput2.fill("顧客");
-    await entityInput2.press("Enter");
-    await page.waitForTimeout(500);
+    await addEntity(page);
+    await setEntityName(page, 1, "顧客");
 
-    // Add properties to 顧客
-    await page
-      .locator(".entity")
-      .last()
-      .locator("button")
-      .filter({ hasText: "+" })
-      .click();
-    await page.waitForTimeout(500);
-    await page
-      .locator(".entity")
-      .last()
-      .locator(".property-row:last-child .entity-property")
-      .click();
-    await page.waitForTimeout(300);
-    propInput = page
-      .locator(".entity")
-      .last()
-      .locator(".property-row:last-child input");
-    await propInput.fill("名前");
-    await propInput.press("Enter");
-    await page.waitForTimeout(300);
+    await addProperty(page, 1);
+    await setPropertyName(page, 1, 0, "名前");
 
-    await page
-      .locator(".entity")
-      .last()
-      .locator("button")
-      .filter({ hasText: "+" })
-      .click();
-    await page.waitForTimeout(500);
-    await page
-      .locator(".entity")
-      .last()
-      .locator(".property-row:last-child .entity-property")
-      .click();
-    await page.waitForTimeout(300);
-    propInput = page
-      .locator(".entity")
-      .last()
-      .locator(".property-row:last-child input");
-    await propInput.fill("住所");
-    await propInput.press("Enter");
-    await page.waitForTimeout(300);
+    await addProperty(page, 1);
+    await setPropertyName(page, 1, 1, "住所");
 
     await takeScreenshot(page, "step1-05", 1, "エンティティ定義完了", {
       cropSelector: ".side-panel",
     });
-  });
 
-  test("Step 2: Create Screens", async ({ page }) => {
-    await page.waitForSelector(".entities-panel", { timeout: 10000 });
+    // ========================================
+    // Step 2: 画面を用意する
+    // ========================================
 
-    // Switch to Screens tab
-    await page.click('[data-value="screens"]');
-    await page.waitForTimeout(500);
+    await clickScreensTab(page);
 
     await takeScreenshot(page, "step2-01", 2, "画面タブ", {
       cropSelector: ".side-panel",
     });
 
-    // Add screens
-    const input = page.locator(".add-screen-form input");
-    await input.fill("販売画面");
-    await page.click('.add-screen-form button:has-text("追加")');
-    await page.waitForTimeout(300);
+    await page
+      .locator(".add-screen-form")
+      .getByRole("textbox")
+      .fill("販売画面");
+    await page.waitForTimeout(100);
 
-    await takeScreenshot(page, "step2-02", 2, "画面追加フォーム", {
+    await takeScreenshot(page, "step2-02", 2, "画面追加入力画面", {
       cropSelector: ".screens-panel",
     });
 
-    await input.fill("会計画面");
-    await page.click('.add-screen-form button:has-text("追加")');
-    await page.waitForTimeout(300);
+    await page.getByRole("button", { name: "追加" }).click();
+    await page.waitForTimeout(100);
 
-    await input.fill("購入完了画面");
-    await page.click('.add-screen-form button:has-text("追加")');
-    await page.waitForTimeout(300);
+    await addScreen(page, "会計画面");
+    await addScreen(page, "購入完了画面");
 
-    await takeScreenshot(page, "step2-03", 2, "画面一覧", {
-      cropSelector: ".screens-panel",
+    await selectScreen(page, 0);
+
+    await takeScreenshot(page, "step2-03", 2, "追加後の画面全体", {
+      fullPage: true,
     });
-  });
 
-  test("Step 3: Add Components", async ({ page }) => {
-    await page.waitForSelector(".component-tree", { timeout: 10000 });
+    // ========================================
+    // Step 3: 画面に内容を配置する（コンポーネント）
+    // ========================================
 
-    // Right-click on canvas
-    await page.locator(".component-tree").click({ button: "right" });
-    await page.waitForTimeout(500);
+    await openContextMenu(page);
 
     await takeScreenshot(
       page,
@@ -302,28 +389,191 @@ test.describe("Tutorial Screenshots", () => {
       }
     );
 
-    // Close context menu
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(200);
+    await selectContextMenuOption(page, "コンテナ");
 
-    await takeScreenshot(page, "step3-02", 3, "空のキャンバス", {
+    await takeScreenshot(page, "step3-02", 3, "コンテナを追加した画面", {
       cropSelector: ".component-tree",
     });
-  });
 
-  test("Step 6: Preview Mode", async ({ page }) => {
-    await page.waitForSelector(".header", { timeout: 10000 });
+    await openContextMenu(page, true);
+
+    await takeScreenshot(
+      page,
+      "step3-03",
+      3,
+      "コンテナの中を右クリックした画面",
+      {
+        cropSelector: ".component-tree",
+      }
+    );
+
+    await selectContextMenuOption(page, "テキスト");
+    await expandEntityAccordion(page, "本");
+
+    await takeScreenshot(page, "step3-04", 3, "エンティティパスを選択中", {
+      cropSelector: ".entity-path-menu",
+    });
+
+    await selectEntityProperty(page, 0, 0);
+
+    await openContextMenu(page, true);
+    await selectContextMenuOption(page, "数値");
+    await expandEntityAccordion(page, "本");
+    await selectEntityProperty(page, 0, 1);
+
+    await takeScreenshot(page, "step3-05", 3, "本のタイトルとか価格を設定", {
+      cropSelector: ".component-tree",
+    });
+
+    await openContextMenu(page, true);
+    await selectContextMenuOption(page, "ボタン");
+    await selectPlaceholder(page, 2);
+
+    await takeScreenshot(
+      page,
+      "step3-06",
+      3,
+      "本のラベルとして「選択」を選ぶ",
+      {
+        cropSelector: ".component-tree",
+      }
+    );
+
+    for (let i = 0; i < 4; i++) {
+      await page
+        .locator(".component-box.depth-1.component-container")
+	.first()
+	.hover()
+      await page
+        .locator(".component-box.depth-1.component-container > .component-actions > button")
+        .first()
+        .click();
+      await page.waitForTimeout(200);
+    }
+
+    // ========================================
+    // Step 4: 画面同士をつなぐ
+    // ========================================
+
+    const selectBookButton = page.locator(".component-button").first();
+    selectBookButton.locator(".target-screen-selector select").selectOption("会計画面");
+    await page.waitForTimeout(100);
+
+    await takeScreenshot(page, "step4-01", 4, "ボタンの遷移画面を選択中", {
+      cropSelector: ".component-tree",
+    });
+
+    // ========================================
+    // Step 5: 他の画面も作る
+    // ========================================
+
+    await clickScreensTab(page);
+    await selectScreen(page, 1);
+
+    await openContextMenu(page);
+    await selectContextMenuOption(page, "テキスト");
+    await expandEntityAccordion(page, "本");
+    await selectEntityProperty(page, 0, 0);
+
+    await openContextMenu(page);
+    await selectContextMenuOption(page, "数値");
+    await expandEntityAccordion(page, "本");
+    await selectEntityProperty(page, 0, 1);
+
+    await openContextMenu(page);
+    await selectContextMenuOption(page, "テキスト");
+    await expandEntityAccordion(page, "顧客");
+    await selectEntityProperty(page, 1, 0);
+
+    await openContextMenu(page);
+    await selectContextMenuOption(page, "テキスト");
+    await expandEntityAccordion(page, "顧客");
+    await selectEntityProperty(page, 1, 1);
+
+    await openContextMenu(page);
+    await selectContextMenuOption(page, "ボタン");
+    await selectPlaceholder(page, 0);
+    
+    const purchaseButton = page.locator(".component-button").first();
+    purchaseButton.locator(".target-screen-selector select").selectOption("購入完了画面");
+
+    await takeScreenshot(page, "step5-01", 5, "会計画面の完了時の画面", {
+      cropSelector: ".component-tree",
+    });
+
+    await selectScreen(page, 2);
+
+    await openContextMenu(page);
+    await selectContextMenuOption(page, "テキスト");
+    await selectPlaceholder(page, 0);
+
+    await openContextMenu(page);
+    await selectContextMenuOption(page, "ボタン");
+    await selectPlaceholder(page, 0);
+
+    const returnButton = page.locator(".component-button").first();
+    returnButton.locator(".target-screen-selector select").selectOption("販売画面");
+
+    // ========================================
+    // Step 6: プレビューで動かす
+    // ========================================
+
+    await clickScreensTab(page);
+    await selectScreen(page, 0);
 
     await takeScreenshot(page, "step6-01", 6, "プレビューボタン", {
       cropSelector: ".header",
     });
 
-    // Click preview button
-    await page.click('button:has-text("プレビュー")');
-    await page.waitForTimeout(500);
+    await page.getByRole("button", { name: "プレビュー" }).click();
+    await page.waitForTimeout(200);
 
-    await takeScreenshot(page, "step6-02", 6, "プレビューモード", {
-      fullPage: true,
+    await takeScreenshot(
+      page,
+      "step6-02",
+      6,
+      "プレビューモードでのボタン表示",
+      {
+        fullPage: true,
+      }
+    );
+
+    await page.getByRole("button", { name: "プレビューを終了" }).click();
+    await page.waitForTimeout(100);
+
+    // ========================================
+    // Step 7: プロパティ名を変更する
+    // ========================================
+
+    await clickEntityTab(page);
+
+    await page
+      .locator(".entity")
+      .nth(1)
+      .locator(".property-row")
+      .nth(1)
+      .locator(".entity-property")
+      .click();
+    await page.waitForTimeout(100);
+
+    await page
+      .locator(".entity")
+      .nth(1)
+      .locator(".property-row")
+      .nth(1)
+      .getByRole("textbox")
+      .fill("配送先住所");
+    await page
+      .locator(".entity")
+      .nth(1)
+      .locator(".property-row")
+      .nth(1)
+      .getByRole("textbox")
+      .press("Enter");
+    await page.waitForTimeout(100);
+
+    await takeScreenshot(page, "step7-01", 7, "プロパティ名を編集中の画面", {
+      cropSelector: ".side-panel",
     });
   });
 });
