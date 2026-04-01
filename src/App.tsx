@@ -432,6 +432,18 @@ function App() {
         )
       );
 
+      // Update entity_type in properties that reference the renamed entity
+      setEntities((prev) =>
+        prev.map((entity) => ({
+          ...entity,
+          properties: entity.properties.map((prop) =>
+            prop.entity_type === oldName
+              ? { ...prop, entity_type: newName }
+              : prop
+          ),
+        }))
+      );
+
       // Update affected components' entity paths in ALL screens
       if (affectedComponentIds.size > 0) {
         setScreens((prevScreens) =>
