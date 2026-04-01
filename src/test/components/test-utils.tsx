@@ -5,14 +5,17 @@ import { render, RenderOptions } from "@testing-library/react";
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { DragManager } from "../../DragManager";
 import { ContextMenuProvider } from "../../ContextMenuContext";
+import { I18nProvider } from "../../I18nContext";
 
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <DndProvider backend={HTML5Backend}>
       <ChakraProvider value={defaultSystem}>
-        <DragManager>
-          <ContextMenuProvider>{children}</ContextMenuProvider>
-        </DragManager>
+        <I18nProvider initialLanguage="en">
+          <DragManager>
+            <ContextMenuProvider>{children}</ContextMenuProvider>
+          </DragManager>
+        </I18nProvider>
       </ChakraProvider>
     </DndProvider>
   );

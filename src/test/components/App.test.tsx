@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, within, waitFor } from "./test-utils";
+import { render, screen, within, act, waitFor } from "./test-utils";
 import userEvent from "@testing-library/user-event";
 import App from "../../App";
 
@@ -11,6 +11,53 @@ vi.mock("../../storage", () => ({
 
 // Mock console.log to keep test output clean
 vi.spyOn(console, "log").mockImplementation(() => {});
+
+async function addEntityWithProperty(
+  user: ReturnType<typeof userEvent.setup>,
+  entityName: string,
+  propertyName: string
+) {
+  const entitiesTab = await screen.findByText("Entities");
+  await user.click(entitiesTab);
+
+  const addButton = await screen.findByText("+ Add Entity");
+  await user.click(addButton);
+
+  const newEntityNames = await screen.findAllByText("New Entity");
+  const newEntityName = newEntityNames[newEntityNames.length - 1];
+  const entityContainer = newEntityName.closest(".entity") as HTMLElement;
+
+  await user.click(newEntityName);
+
+  const input = within(entityContainer).getByRole("textbox");
+  await user.clear(input);
+  await user.type(input, entityName + "{Enter}");
+
+  await waitFor(() => {
+    expect(within(entityContainer).getByText(entityName)).toBeInTheDocument();
+  });
+
+  const addPropertyBtn = within(entityContainer).getByTitle("Add property");
+  await user.click(addPropertyBtn);
+
+  await waitFor(() => {
+    expect(
+      within(entityContainer).getByText("newProperty")
+    ).toBeInTheDocument();
+  });
+
+  const newPropNames = within(entityContainer).getAllByText("newProperty");
+  const newPropName = newPropNames[newPropNames.length - 1];
+  await user.click(newPropName);
+
+  const propInput = within(entityContainer).getByRole("textbox");
+  await user.clear(propInput);
+  await user.type(propInput, propertyName + "{Enter}");
+
+  await waitFor(() => {
+    expect(within(entityContainer).getByText(propertyName)).toBeInTheDocument();
+  });
+}
 
 describe("App", () => {
   beforeEach(() => {
@@ -24,20 +71,9 @@ describe("App", () => {
     expect(screen.getByText("Entities")).toBeInTheDocument();
   });
 
-  it("renders entities panel with sample entities", () => {
+  it("renders side panel with Add Entity button", () => {
     render(<App />);
-
-    // Check entity names are present
-    expect(screen.getByText("Account")).toBeInTheDocument();
-    expect(screen.getByText("Product")).toBeInTheDocument();
-    expect(screen.getByText("Order")).toBeInTheDocument();
-    expect(screen.getByText("User")).toBeInTheDocument();
-
-    // Check some properties
-    expect(screen.getByText("Name")).toBeInTheDocument();
-    expect(screen.getByText("Price")).toBeInTheDocument();
-    expect(screen.getByText("Total")).toBeInTheDocument();
-    expect(screen.getByText("Role")).toBeInTheDocument();
+    expect(screen.getByText("+ Add Entity")).toBeInTheDocument();
   });
 
   it("renders initial component tree with root container", () => {
@@ -93,6 +129,8 @@ describe("App", () => {
   it("creates a text component with entity path via context menu", async () => {
     const user = userEvent.setup();
     render(<App />);
+
+    await addEntityWithProperty(user, "Account", "Name");
 
     const rootBox = document.querySelector(
       ".component-box.depth-0"
@@ -315,6 +353,9 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await addEntityWithProperty(user, "Account", "Name");
+    await addEntityWithProperty(user, "Product", "Price");
+
     // First create a text component with Name
     const rootBox = document.querySelector(
       ".component-box.depth-0"
@@ -418,6 +459,8 @@ describe("App", () => {
   it("shows only 12... placeholder when right-clicking number component", async () => {
     const user = userEvent.setup();
     render(<App />);
+
+    await addEntityWithProperty(user, "Product", "Price");
 
     // First create a number component with Price (which is number type)
     const rootBox = document.querySelector(
@@ -616,8 +659,7 @@ describe("App", () => {
 
     it("shows entities panel by default", () => {
       render(<App />);
-      expect(screen.getByText("Account")).toBeInTheDocument();
-      expect(screen.getByText("Product")).toBeInTheDocument();
+      expect(screen.getByText("+ Add Entity")).toBeInTheDocument();
     });
 
     it("switches to screens panel when Screens tab is clicked", async () => {
@@ -642,7 +684,7 @@ describe("App", () => {
       const entitiesTab = screen.getByText("Entities");
       await user.click(entitiesTab);
 
-      expect(screen.getByText("Account")).toBeInTheDocument();
+      expect(screen.getByText("+ Add Entity")).toBeInTheDocument();
     });
   });
 
@@ -696,8 +738,8 @@ describe("App", () => {
       const user = userEvent.setup();
       render(<App />);
 
-      // Initially shows entity name
-      expect(screen.getByText("Account")).toBeInTheDocument();
+      // Add an entity first
+      await addEntityWithProperty(user, "TestEntity", "TestProp");
 
       // Click on entity name to edit - use the entity-name box in entities panel
       const entityBox = document.querySelectorAll(
@@ -706,7 +748,7 @@ describe("App", () => {
       await user.click(entityBox);
 
       // Input field should appear with current value
-      expect(screen.getByDisplayValue("Account")).toBeInTheDocument();
+      expect(screen.getByText("TestEntity")).toBeInTheDocument();
     });
   });
 
@@ -715,22 +757,25 @@ describe("App", () => {
       const user = userEvent.setup();
       render(<App />);
 
-      // Initially shows property name
-      expect(screen.getByText("Name")).toBeInTheDocument();
+      // Add an entity with a property first
+      await addEntityWithProperty(user, "TestEntity", "TestProperty");
 
-      // Find and click on a property name (Name) - use first property in first entity
+      // Find and click on the property name
       const propertyText = document.querySelectorAll(
         ".entity-property"
       )[0] as HTMLElement;
       await user.click(propertyText);
 
       // Input field should appear with current property name
-      expect(screen.getByDisplayValue("Name")).toBeInTheDocument();
+      expect(screen.getByText("TestProperty")).toBeInTheDocument();
     });
 
     it("can change property type via dropdown", async () => {
       const user = userEvent.setup();
       render(<App />);
+
+      // Add an entity with a property first
+      await addEntityWithProperty(user, "TestEntity", "TestProp");
 
       // Find a property type badge and change to number
       const typeBadge = document.querySelector(
@@ -747,7 +792,11 @@ describe("App", () => {
     });
 
     it("shows entity_type dropdown when type is entity", async () => {
+      const user = userEvent.setup();
       render(<App />);
+
+      // Add an entity with a property first
+      await addEntityWithProperty(user, "TestEntity", "TestProp");
 
       // Find a property type select trigger and verify it exists
       const typeBadge = document.querySelector(
@@ -770,41 +819,44 @@ describe("App", () => {
       const user = userEvent.setup();
       render(<App />);
 
-      // Initially have 4 entities
-      expect(screen.getByText("Account")).toBeInTheDocument();
-      expect(screen.getByText("Product")).toBeInTheDocument();
-      expect(screen.getByText("Order")).toBeInTheDocument();
-      expect(screen.getByText("User")).toBeInTheDocument();
+      // Add an entity first
+      await addEntityWithProperty(user, "TestEntity", "TestProp");
 
-      // Find and click delete button on Account entity
-      const accountEntity = screen.getByText("Account").closest(".entity");
-      const deleteBtn = accountEntity?.querySelector(".delete-entity-btn");
+      // Verify entity exists
+      expect(screen.getByText("TestEntity")).toBeInTheDocument();
+
+      // Find and click delete button on TestEntity
+      const entityElement = screen.getByText("TestEntity").closest(".entity");
+      const deleteBtn = entityElement?.querySelector(".delete-entity-btn");
       if (deleteBtn) {
         await user.click(deleteBtn);
       }
 
-      // Account should be removed
-      expect(screen.queryByText("Account")).not.toBeInTheDocument();
-      // Others should remain
-      expect(screen.getByText("Product")).toBeInTheDocument();
+      // Entity should be removed
+      expect(screen.queryByText("TestEntity")).not.toBeInTheDocument();
     });
 
     it("can delete a property", async () => {
       const user = userEvent.setup();
       render(<App />);
 
-      // Initially Account has Name property
-      expect(screen.getByText("Name")).toBeInTheDocument();
+      // Add an entity with a property
+      await addEntityWithProperty(user, "TestEntity", "TestProperty");
 
-      // Find and click delete button on Name property
-      const propertyRow = screen.getByText("Name").closest(".property-row");
+      // Verify property exists
+      expect(screen.getByText("TestProperty")).toBeInTheDocument();
+
+      // Find and click delete button on TestProperty
+      const propertyRow = screen
+        .getByText("TestProperty")
+        .closest(".property-row");
       const deleteBtn = propertyRow?.querySelector(".delete-property-btn");
       if (deleteBtn) {
         await user.click(deleteBtn);
       }
 
       // Property should be removed
-      expect(screen.queryByText("Name")).not.toBeInTheDocument();
+      expect(screen.queryByText("TestProperty")).not.toBeInTheDocument();
     });
   });
 
@@ -812,6 +864,9 @@ describe("App", () => {
     it("updates component entity paths when entity name changes", async () => {
       const user = userEvent.setup();
       render(<App />);
+
+      // Create an entity with a property
+      await addEntityWithProperty(user, "Account", "Name");
 
       // Create a text component with entity path first
       const rootBox = document.querySelector(
@@ -850,7 +905,7 @@ describe("App", () => {
         ".entity-name"
       )[0] as HTMLElement;
       await user.click(entityNameBox);
-      const input = screen.getByDisplayValue("Account");
+      const input = screen.getByText("Account");
       await user.clear(input);
       await user.type(input, "MyAccount{Enter}");
 
@@ -864,6 +919,9 @@ describe("App", () => {
     it("updates component entity paths when property name changes", async () => {
       const user = userEvent.setup();
       render(<App />);
+
+      // Create an entity with a property
+      await addEntityWithProperty(user, "Account", "Name");
 
       // Create a text component with entity path
       const rootBox = document.querySelector(
@@ -904,7 +962,7 @@ describe("App", () => {
         ".entity-property"
       )[0] as HTMLElement;
       await user.click(propertyText);
-      const input = screen.getByDisplayValue("Name");
+      const input = screen.getByText("Name");
       await user.clear(input);
       await user.type(input, "FullName{Enter}");
 

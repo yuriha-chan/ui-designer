@@ -88,25 +88,33 @@ function getInitialScreen(lang: Language): Screen {
 
 const MAX_HISTORY = 50;
 
+const ROOT_SCREEN_ID = "root-screen";
+
 function App() {
   const { language, setLanguage, t } = useI18n();
 
+  // Create initial screen with fixed ID to avoid uuid mismatch
+  const createInitialScreen = (lang: Language): Screen => ({
+    id: ROOT_SCREEN_ID,
+    name: lang === "ja" ? "メイン画面" : "Main Screen",
+    components: [{ id: "root", type: "container", children: [] }],
+  });
+
   // ストーリーボード状態
   const [screens, setScreens] = useState<Screen[]>(() => [
-    getInitialScreen(language),
+    createInitialScreen(language),
   ]);
   const [history, setHistory] = useState<Screen[][]>(() => [
-    [getInitialScreen(language)],
+    [createInitialScreen(language)],
   ]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Refs for synchronous access in callbacks
-  const historyRef = useRef<Screen[][]>([[getInitialScreen(language)]]);
+  const historyRef = useRef<Screen[][]>([[createInitialScreen(language)]]);
   const historyIndexRef = useRef(0);
 
-  const [currentScreenId, setCurrentScreenId] = useState<string>(
-    getInitialScreen(language).id
-  );
+  const [currentScreenId, setCurrentScreenId] =
+    useState<string>(ROOT_SCREEN_ID);
   const [entities, setEntities] = useState<Entity[]>(() =>
     getSampleEntities(language)
   );
