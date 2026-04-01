@@ -210,6 +210,14 @@ async function selectScreen(page: Page, index: number) {
   await page.waitForTimeout(100);
 }
 
+async function setScreenName(page: Page, name: string) {
+  await page.locator(".header h1").click();
+  await page.waitForTimeout(100);
+  await page.locator(".header input").fill(name);
+  await page.locator(".header input").press("Enter");
+  await page.waitForTimeout(100);
+}
+
 async function openContextMenu(page: Page, onContainer = false) {
   if (onContainer) {
     const container = page
@@ -841,6 +849,37 @@ test.describe("Tutorial Screenshots", () => {
     // step7-03: プロパティ名変更完了
     await takeScreenshot(page, "step7-03", 7, "プロパティ名変更完了", {
       cropSelector: ".side-panel",
+    });
+
+    // ========================================
+    // Step 8: 画面名を変更する
+    // ========================================
+
+    await clickScreensTab(page);
+    await selectScreen(page, 0);
+
+    // step8-01: 画面名ヘッダークリック位置
+    await takeScreenshot(page, "step8-01", 8, "画面名ヘッダークリック位置", {
+      cropSelector: ".header",
+      markedSelectors: [".header h1"],
+    });
+
+    await page.locator(".header h1").click();
+    await page.waitForTimeout(100);
+
+    await page.locator(".header input").first().fill("商品画面");
+    // step8-02: 画面名編集中
+    await takeScreenshot(page, "step8-02", 8, "画面名編集中", {
+      cropSelector: ".header",
+      markedSelectors: [".header input"],
+    });
+
+    await page.locator(".header input").first().press("Enter");
+    await page.waitForTimeout(100);
+
+    // step8-03: 画面名変更完了
+    await takeScreenshot(page, "step8-03", 8, "画面名変更完了", {
+      cropSelector: ".header",
     });
   });
 });
