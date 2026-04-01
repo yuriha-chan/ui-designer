@@ -62,6 +62,14 @@ export const translations = {
       delete: "Delete",
       new: "New",
     },
+    // Welcome dialog
+    welcome: {
+      title: "Welcome to UI Designer",
+      description: "A distraction-free UI structure designer",
+      tutorial: "Tutorial",
+      userGuide: "User Guide",
+      close: "Get Started",
+    },
   },
   ja: {
     // App header
@@ -125,6 +133,14 @@ export const translations = {
       select: "選択",
       delete: "削除",
       new: "新規",
+    },
+    // Welcome dialog
+    welcome: {
+      title: "UI Designerへようこそ",
+      description: "集中力を保つUI構造デザイナー",
+      tutorial: "チュートリアル",
+      userGuide: "ユーザーガイド",
+      close: "始める",
     },
   },
 } as const;

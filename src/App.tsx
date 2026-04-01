@@ -28,6 +28,7 @@ import {
   Heading,
   HStack,
   Tabs,
+  Link,
 } from "@chakra-ui/react";
 import {
   sortComponentsBySExpression,
@@ -44,25 +45,13 @@ import { EntityPathMenu } from "./components/EntityPathMenu";
 import { ContainerContextMenu } from "./components/ContainerContextMenu";
 import { EntitiesPanel } from "./components/EntitiesPanel";
 import { ScreensPanel } from "./components/ScreensPanel";
+import { WelcomeDialog } from "./components/WelcomeDialog";
 import {
   useContextMenuState,
   useContextMenuDispatch,
 } from "./ContextMenuContext";
 import { useI18n, type Language } from "./I18nContext";
 import "./App.css";
-
-function getSampleEntities(lang: Language): Entity[] {
-  return [];
-}
-
-function getInitialScreen(lang: Language): Screen {
-  const name = lang === "ja" ? "メイン画面" : "Main Screen";
-  return {
-    id: uuidv4(),
-    name,
-    components: [{ id: "root", type: "container", children: [] }],
-  };
-}
 
 const MAX_HISTORY = 50;
 
@@ -93,9 +82,7 @@ function App() {
 
   const [currentScreenId, setCurrentScreenId] =
     useState<string>(ROOT_SCREEN_ID);
-  const [entities, setEntities] = useState<Entity[]>(() =>
-    getSampleEntities(language)
-  );
+  const [entities, setEntities] = useState<Entity[]>(() => []);
   const [panelType, setPanelType] = useState<"entities" | "screens">(
     "entities"
   );
@@ -106,6 +93,7 @@ function App() {
     "storyboard"
   );
   const [exportFormat, setExportFormat] = useState<"json" | "llm-text">("json");
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contextMenu = useContextMenuState();
@@ -581,6 +569,9 @@ function App() {
       setHistoryIndex(0);
       historyRef.current = loadedHistory;
       historyIndexRef.current = 0;
+    } else {
+      // First launch - show welcome dialog
+      setShowWelcome(true);
     }
   }, []);
 
@@ -1202,6 +1193,24 @@ function App() {
                     style={{ display: "none" }}
                     accept=".json,application/json"
                   />
+                  <Link
+                    href={`/docs/${language === "ja" ? "" : language + "/"}Tutorial`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button colorScheme="blue" size="sm">
+                      {t("welcome.tutorial")}
+                    </Button>
+                  </Link>
+                  <Link
+                    href={`/docs/${language === "ja" ? "" : language + "/"}User_Guide`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button colorScheme="blue" size="sm">
+                      {t("welcome.userGuide")}
+                    </Button>
+                  </Link>
                 </HStack>
               </Box>
             )}
@@ -1333,6 +1342,10 @@ function App() {
                 y={contextMenu.y}
               />
             )}
+            <WelcomeDialog
+              open={showWelcome}
+              onClose={() => setShowWelcome(false)}
+            />
           </Box>
         </DragManager>
       </DndProvider>
