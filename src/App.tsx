@@ -54,16 +54,7 @@ function getSampleEntities(lang: Language): Entity[] {
   if (lang === "ja") {
     return [
       {
-        name: "アカウント",
-        properties: [
-          { name: "名前", type: "string" },
-          { name: "メール", type: "string" },
-          { name: "残高", type: "number" },
-          { name: "ステータス", type: "string" },
-        ],
-      },
-      {
-        name: "商品",
+        name: "商品 (例)",
         properties: [
           { name: "タイトル", type: "string" },
           { name: "価格", type: "number" },
@@ -71,59 +62,16 @@ function getSampleEntities(lang: Language): Entity[] {
           { name: "カテゴリ", type: "string" },
         ],
       },
-      {
-        name: "注文",
-        properties: [
-          { name: "ID", type: "string" },
-          { name: "日付", type: "string" },
-          { name: "合計", type: "number" },
-          { name: "ステータス", type: "string" },
-        ],
-      },
-      {
-        name: "ユーザー",
-        properties: [
-          { name: "ユーザー名", type: "string" },
-          { name: "役割", type: "string" },
-          { name: "最終ログイン", type: "string" },
-        ],
-      },
     ];
   }
   return [
     {
-      name: "Account",
-      properties: [
-        { name: "Name", type: "string" },
-        { name: "Email", type: "string" },
-        { name: "Balance", type: "number" },
-        { name: "Status", type: "string" },
-      ],
-    },
-    {
-      name: "Product",
+      name: "Product (example)",
       properties: [
         { name: "Title", type: "string" },
         { name: "Price", type: "number" },
         { name: "Stock", type: "number" },
         { name: "Category", type: "string" },
-      ],
-    },
-    {
-      name: "Order",
-      properties: [
-        { name: "ID", type: "string" },
-        { name: "Date", type: "string" },
-        { name: "Total", type: "number" },
-        { name: "Status", type: "string" },
-      ],
-    },
-    {
-      name: "User",
-      properties: [
-        { name: "Username", type: "string" },
-        { name: "Role", type: "string" },
-        { name: "LastLogin", type: "string" },
       ],
     },
   ];
@@ -756,7 +704,7 @@ function App() {
         });
       };
 
-      updateCurrentScreenComponents(() => updateComponents(currentComponents));
+      updateCurrentScreenComponents((comps) => updateComponents(comps));
     },
     [getCurrentComponents, updateCurrentScreenComponents]
   );
