@@ -453,3 +453,38 @@ input[type="text"]:focus {
   background-color: transparent !important;
   color: #fff !important;
 }
+
+/* Tab selected state */
+[data-tab-trigger][data-selected] {
+  color: #fff !important;
+  background-color: #444 !important;
+}
+
+/* Context menu styling */
+.menu-option,
+.property-option {
+  color: #ddd !important;
+}
+
+.menu-option:hover,
+.property-option:hover,
+.menu-option:focus,
+.property-option:focus {
+  background-color: #3a3a3a !important;
+  color: #fff !important;
+}
+
+.menu-option:active,
+.property-option:active {
+  background-color: #555 !important;
+  color: #fff !important;
+}
+
+/* Preview mode exit button */
+.preview-exit-btn {
+  color: #ddd !important;
+}
+
+.preview-exit-btn:hover {
+  background-color: #444 !important;
+}

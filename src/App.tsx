@@ -103,7 +103,7 @@ function App() {
   const [isEditingScreenName, setIsEditingScreenName] = useState(false);
   const [, setEditingScreenName] = useState("");
   const [exportMode, setExportMode] = useState<"screen" | "storyboard">(
-    "screen"
+    "storyboard"
   );
   const [exportFormat, setExportFormat] = useState<"json" | "llm-text">("json");
 
@@ -636,25 +636,33 @@ function App() {
     (draggedId: string, targetId: string) => {
       if (targetId === null) return;
       updateCurrentScreenComponents((comps) => {
-        if (draggedId === targetId || isDescendantPure(comps, draggedId, targetId)) { return comps }
+        if (
+          draggedId === targetId ||
+          isDescendantPure(comps, draggedId, targetId)
+        ) {
+          return comps;
+        }
         const { node, newComps } = findAndRemove(comps, draggedId);
         if (!node) {
-          throw Error(`component draggedId=${draggedId} not found`)
+          throw Error(`component draggedId=${draggedId} not found`);
         }
         if (!findComponent(newComps, targetId)) {
-          throw Error(`component targetId=${targetId} not found`)
+          throw Error(`component targetId=${targetId} not found`);
         }
-        const inserted =  insert(newComps, targetId, node);
+        const inserted = insert(newComps, targetId, node);
         console.log("move", comps, inserted);
         return inserted;
-      })
+      });
     },
     [updateCurrentScreenComponents]
   );
 
   const copyComponent = useCallback(
     (sourceId: string, parentId: string) => {
-      const copyRecursive = (copied: UIComponent, comps: UIComponent[]): UIComponent[] => {
+      const copyRecursive = (
+        copied: UIComponent,
+        comps: UIComponent[]
+      ): UIComponent[] => {
         return comps.map((comp) => {
           if (comp.id === parentId) {
             return {
@@ -671,10 +679,12 @@ function App() {
       updateCurrentScreenComponents((comps) => {
         const source = findComponent(comps, sourceId);
         if (!source) {
-          throw Error(`component sourceId=${sourceId} not found in ${JSON.stringify(comps)}`)
+          throw Error(
+            `component sourceId=${sourceId} not found in ${JSON.stringify(comps)}`
+          );
         }
         const copied = deepCopy(source);
-        return copyRecursive(copied, comps)
+        return copyRecursive(copied, comps);
       });
     },
     [updateCurrentScreenComponents]
@@ -996,12 +1006,14 @@ function App() {
           <Box className="app">
             {previewMode ? (
               <Button
+                className="preview-exit-btn"
                 onClick={() => setPreviewMode(false)}
                 title="Exit preview mode"
                 variant="ghost"
                 colorScheme="gray"
                 size="sm"
-              >{t("app.exitPreview")}
+              >
+                {t("app.exitPreview")}
               </Button>
             ) : (
               <Box as="header" className="header">
@@ -1102,8 +1114,8 @@ function App() {
                         setExportMode(e.target.value as "screen" | "storyboard")
                       }
                     >
-                      <option value="screen">{t("app.currentScreen")}</option>
                       <option value="storyboard">{t("app.storyboard")}</option>
+                      <option value="screen">{t("app.currentScreen")}</option>
                     </NativeSelect.Field>
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
@@ -1205,10 +1217,18 @@ function App() {
                         variant="subtle"
                       >
                         <Tabs.List>
-                          <Tabs.Trigger value="entities" color="gray.300">
+                          <Tabs.Trigger
+                            value="entities"
+                            color="gray.300"
+                            _selected={{ color: "white", bg: "gray.700" }}
+                          >
                             {t("tabs.entities")}
                           </Tabs.Trigger>
-                          <Tabs.Trigger value="screens" color="gray.300">
+                          <Tabs.Trigger
+                            value="screens"
+                            color="gray.300"
+                            _selected={{ color: "white", bg: "gray.700" }}
+                          >
                             {t("tabs.screens")}
                           </Tabs.Trigger>
                         </Tabs.List>
